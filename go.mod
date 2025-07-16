@@ -18,7 +18,7 @@ require (
 	github.com/hashicorp/logutils v1.0.0
 	github.com/jessevdk/go-flags v1.5.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/mattn/go-colorable v0.1.13
+	github.com/mattn/go-colorable v0.1.14
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/owenrumney/go-sarif v1.1.1
 	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
@@ -78,7 +78,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
 	golang.org/x/sync v0.5.0 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.152.0 // indirect
