@@ -1,6 +1,6 @@
 module github.com/terraform-linters/tflint
 
-go 1.21.1
+go 1.23.0
 
 require (
 	github.com/agext/levenshtein v1.2.3
@@ -23,7 +23,7 @@ require (
 	github.com/owenrumney/go-sarif v1.1.1
 	github.com/sourcegraph/go-lsp v0.0.0-20200429204803-219e11d77f5d
 	github.com/sourcegraph/jsonrpc2 v0.2.0
-	github.com/spf13/afero v1.11.0
+	github.com/spf13/afero v1.14.0
 	github.com/terraform-linters/tflint-plugin-sdk v0.18.0
 	github.com/terraform-linters/tflint-ruleset-terraform v0.5.0
 	github.com/xeipuuv/gojsonschema v1.2.0
@@ -31,7 +31,7 @@ require (
 	github.com/zclconf/go-cty-yaml v1.0.3
 	golang.org/x/crypto v0.18.0
 	golang.org/x/oauth2 v0.16.0
-	golang.org/x/text v0.14.0
+	golang.org/x/text v0.23.0
 	google.golang.org/grpc v1.61.0
 )
 
@@ -77,7 +77,7 @@ require (
 	github.com/xeipuuv/gojsonreference v0.0.0-20180127040603-bd5ef7bd5415 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/net v0.20.0 // indirect
-	golang.org/x/sync v0.5.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.16.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
