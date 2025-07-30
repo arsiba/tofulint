@@ -10,7 +10,7 @@ test: prepare
 
 build:
 	mkdir -p dist
-	go build -v -o dist/tflint
+	go build -v -o dist/tofulint
 
 install:
 	go install
