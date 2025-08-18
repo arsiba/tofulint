@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"io"
 
+	"github.com/arsiba/tofulint/tflint"
 	hcl "github.com/hashicorp/hcl/v2"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 // Formatter outputs appropriate results to stdout and stderr depending on the format

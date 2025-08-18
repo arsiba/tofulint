@@ -4,11 +4,11 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/arsiba/tofulint/opentofu"
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	flags "github.com/jessevdk/go-flags"
-	"github.com/terraform-linters/tflint/terraform"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func Test_toConfig(t *testing.T) {
@@ -26,7 +26,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--call-module-type",
 			Command: "./tflint --call-module-type all",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallAllModule,
+				CallModuleType:    opentofu.CallAllModule,
 				CallModuleTypeSet: true,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
@@ -41,7 +41,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--module",
 			Command: "./tflint --module",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallAllModule,
+				CallModuleType:    opentofu.CallAllModule,
 				CallModuleTypeSet: true,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
@@ -56,7 +56,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--no-module",
 			Command: "./tflint --no-module",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallNoModule,
+				CallModuleType:    opentofu.CallNoModule,
 				CallModuleTypeSet: true,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
@@ -71,7 +71,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--module and --call-module-type",
 			Command: "./tflint --module --call-module-type none",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallNoModule,
+				CallModuleType:    opentofu.CallNoModule,
 				CallModuleTypeSet: true,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
@@ -86,7 +86,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--force",
 			Command: "./tflint --force",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             true,
 				ForceSet:          true,
 				IgnoreModules:     map[string]bool{},
@@ -101,7 +101,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--ignore-module",
 			Command: "./tflint --ignore-module module1,module2",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{"module1": true, "module2": true},
 				Varfiles:          []string{},
@@ -115,7 +115,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "multiple --ignore-module",
 			Command: "./tflint --ignore-module module1 --ignore-module module2",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{"module1": true, "module2": true},
 				Varfiles:          []string{},
@@ -129,7 +129,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--var-file",
 			Command: "./tflint --var-file example1.tfvars,example2.tfvars",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{"example1.tfvars", "example2.tfvars"},
@@ -143,7 +143,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "multiple --var-file",
 			Command: "./tflint --var-file example1.tfvars --var-file example2.tfvars",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{"example1.tfvars", "example2.tfvars"},
@@ -157,7 +157,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--var",
 			Command: "./tflint --var foo=bar --var bar=baz",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -171,7 +171,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--enable-rule",
 			Command: "./tflint --enable-rule aws_instance_invalid_type --enable-rule aws_instance_previous_type",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -196,7 +196,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--disable-rule",
 			Command: "./tflint --disable-rule aws_instance_invalid_type --disable-rule aws_instance_previous_type",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -221,7 +221,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--only",
 			Command: "./tflint --only aws_instance_invalid_type",
 			Expected: &tflint.Config{
-				CallModuleType:       terraform.CallLocalModule,
+				CallModuleType:       opentofu.CallLocalModule,
 				Force:                false,
 				IgnoreModules:        map[string]bool{},
 				Varfiles:             []string{},
@@ -243,7 +243,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--enable-plugin",
 			Command: "./tflint --enable-plugin test --enable-plugin another-test",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -268,7 +268,7 @@ func Test_toConfig(t *testing.T) {
 			Name:    "--format",
 			Command: "./tflint --format compact",
 			Expected: &tflint.Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},

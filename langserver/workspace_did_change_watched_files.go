@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/arsiba/tofulint/tflint"
 	lsp "github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func (h *handler) workspaceDidChangeWatchedFiles(ctx context.Context, conn *jsonrpc2.Conn, req *jsonrpc2.Request) (result interface{}, err error) {

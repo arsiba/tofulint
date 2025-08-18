@@ -4,8 +4,8 @@ import (
 	"encoding/xml"
 	"fmt"
 
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/jstemmer/go-junit-report/formatter"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 // https://www.ibm.com/docs/en/developer-for-zos/14.1.0?topic=formats-junit-xml-format

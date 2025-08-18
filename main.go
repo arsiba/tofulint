@@ -7,8 +7,8 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/arsiba/tofulint/cmd"
 	colorable "github.com/mattn/go-colorable"
-	"github.com/terraform-linters/tflint/cmd"
 )
 
 func main() {

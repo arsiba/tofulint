@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/terraform-linters/tflint/tflint"
+	"github.com/arsiba/tofulint/tflint"
 )
 
 func Test_Install(t *testing.T) {

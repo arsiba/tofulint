@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/arsiba/tofulint/plugin"
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/fatih/color"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint/plugin"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func (cli *CLI) init(opts Options) int {

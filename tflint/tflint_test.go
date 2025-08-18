@@ -7,8 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/arsiba/tofulint/opentofu"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint/terraform"
 )
 
 func TestMain(m *testing.M) {
@@ -40,7 +40,7 @@ func testRunnerWithOsFs(t *testing.T, config *Config) *Runner {
 		t.Fatal(err)
 	}
 
-	loader, err := terraform.NewLoader(afero.Afero{Fs: afero.NewOsFs()}, originalWd)
+	loader, err := opentofu.NewLoader(afero.Afero{Fs: afero.NewOsFs()}, originalWd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +50,7 @@ func testRunnerWithOsFs(t *testing.T, config *Config) *Runner {
 		t.Fatal(diags)
 	}
 
-	runner, err := NewRunner(originalWd, config, map[string]Annotations{}, cfg, map[string]*terraform.InputValue{})
+	runner, err := NewRunner(originalWd, config, map[string]Annotations{}, cfg, map[string]*opentofu.InputValue{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func testRunnerWithAnnotations(t *testing.T, files map[string]string, annotation
 		t.Fatal(err)
 	}
 
-	loader, err := terraform.NewLoader(fs, originalWd)
+	loader, err := opentofu.NewLoader(fs, originalWd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -83,7 +83,7 @@ func testRunnerWithAnnotations(t *testing.T, files map[string]string, annotation
 		t.Fatal(diags)
 	}
 
-	runner, err := NewRunner(originalWd, config, annotations, cfg, map[string]*terraform.InputValue{})
+	runner, err := NewRunner(originalWd, config, annotations, cfg, map[string]*opentofu.InputValue{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,6 +93,6 @@ func testRunnerWithAnnotations(t *testing.T, files map[string]string, annotation
 
 func moduleConfig() *Config {
 	c := EmptyConfig()
-	c.CallModuleType = terraform.CallAllModule
+	c.CallModuleType = opentofu.CallAllModule
 	return c
 }

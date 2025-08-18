@@ -8,8 +8,8 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/arsiba/tofulint/langserver"
 	"github.com/sourcegraph/jsonrpc2"
-	"github.com/terraform-linters/tflint/langserver"
 )
 
 func (cli *CLI) startLanguageServer(opts Options) int {

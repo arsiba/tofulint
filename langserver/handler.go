@@ -11,6 +11,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/arsiba/tofulint/opentofu"
+	"github.com/arsiba/tofulint/plugin"
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	lsp "github.com/sourcegraph/go-lsp"
@@ -18,9 +21,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/plugin"
-	"github.com/terraform-linters/tflint/terraform"
-	"github.com/terraform-linters/tflint/tflint"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -163,7 +163,7 @@ func (h *handler) chdir(dir string) error {
 func (h *handler) inspect() (map[string][]lsp.Diagnostic, error) {
 	ret := map[string][]lsp.Diagnostic{}
 
-	loader, err := terraform.NewLoader(afero.Afero{Fs: h.fs}, h.rootDir)
+	loader, err := opentofu.NewLoader(afero.Afero{Fs: h.fs}, h.rootDir)
 	if err != nil {
 		return ret, fmt.Errorf("Failed to prepare loading: %w", err)
 	}
@@ -190,7 +190,7 @@ func (h *handler) inspect() (map[string][]lsp.Diagnostic, error) {
 	if diags.HasErrors() {
 		return ret, fmt.Errorf("Failed to load values files: %w", diags)
 	}
-	cliVars, diags := terraform.ParseVariableValues(h.config.Variables, configs.Module.Variables)
+	cliVars, diags := opentofu.ParseVariableValues(h.config.Variables, configs.Module.Variables)
 	if diags.HasErrors() {
 		return ret, fmt.Errorf("Failed to parse variables: %w", diags)
 	}

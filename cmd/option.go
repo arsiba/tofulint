@@ -4,8 +4,8 @@ import (
 	"log"
 	"strings"
 
-	"github.com/terraform-linters/tflint/terraform"
-	"github.com/terraform-linters/tflint/tflint"
+	"github.com/arsiba/tofulint/opentofu"
+	"github.com/arsiba/tofulint/tflint"
 )
 
 // Options is an option specified by arguments.
@@ -55,20 +55,20 @@ func (opts *Options) toConfig() *tflint.Config {
 		opts.Variables = []string{}
 	}
 
-	callModuleType := terraform.CallLocalModule
+	callModuleType := opentofu.CallLocalModule
 	callModuleTypeSet := false
 	// --call-module-type takes precedence over --module/--no-module. This is for backward compatibility.
 	if opts.Module != nil {
-		callModuleType = terraform.CallAllModule
+		callModuleType = opentofu.CallAllModule
 		callModuleTypeSet = true
 	}
 	if opts.NoModule != nil {
-		callModuleType = terraform.CallNoModule
+		callModuleType = opentofu.CallNoModule
 		callModuleTypeSet = true
 	}
 	if opts.CallModuleType != nil {
 		var err error
-		callModuleType, err = terraform.AsCallModuleType(*opts.CallModuleType)
+		callModuleType, err = opentofu.AsCallModuleType(*opts.CallModuleType)
 		if err != nil {
 			// This should never happen because the option is already validated by go-flags
 			panic(err)

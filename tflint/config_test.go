@@ -5,6 +5,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/arsiba/tofulint/opentofu"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	hcl "github.com/hashicorp/hcl/v2"
@@ -12,7 +13,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/terraform"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -74,7 +74,7 @@ plugin "baz" {
 }`,
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallAllModule,
+				CallModuleType:    opentofu.CallAllModule,
 				CallModuleTypeSet: true,
 				Force:             true,
 				ForceSet:          true,
@@ -146,7 +146,7 @@ config {
 				"TFLINT_CONFIG_FILE": "env.hcl",
 			},
 			want: &Config{
-				CallModuleType:       terraform.CallLocalModule,
+				CallModuleType:       opentofu.CallLocalModule,
 				Force:                true,
 				ForceSet:             true,
 				IgnoreModules:        map[string]bool{},
@@ -175,7 +175,7 @@ config {
 }`,
 			},
 			want: &Config{
-				CallModuleType:       terraform.CallLocalModule,
+				CallModuleType:       opentofu.CallLocalModule,
 				Force:                true,
 				ForceSet:             true,
 				IgnoreModules:        map[string]bool{},
@@ -209,7 +209,7 @@ plugin "terraform" {
 }`,
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -350,7 +350,7 @@ plugin "foo" {
 }`,
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -394,7 +394,7 @@ config {
 				"TFLINT_CONFIG_FILE": "env.hcl",
 			},
 			want: &Config{
-				CallModuleType:       terraform.CallLocalModule,
+				CallModuleType:       opentofu.CallLocalModule,
 				Force:                true,
 				ForceSet:             true,
 				IgnoreModules:        map[string]bool{},
@@ -423,7 +423,7 @@ config {
 }`,
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallNoModule,
+				CallModuleType:    opentofu.CallNoModule,
 				CallModuleTypeSet: true,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
@@ -483,7 +483,7 @@ func TestMerge(t *testing.T) {
 	}
 
 	config := &Config{
-		CallModuleType:    terraform.CallAllModule,
+		CallModuleType:    opentofu.CallAllModule,
 		CallModuleTypeSet: true,
 		Force:             true,
 		ForceSet:          true,
@@ -540,7 +540,7 @@ func TestMerge(t *testing.T) {
 		{
 			name: "override and merge",
 			base: &Config{
-				CallModuleType:    terraform.CallNoModule,
+				CallModuleType:    opentofu.CallNoModule,
 				CallModuleTypeSet: true,
 				Force:             false,
 				ForceSet:          true,
@@ -580,7 +580,7 @@ func TestMerge(t *testing.T) {
 				},
 			},
 			other: &Config{
-				CallModuleType:    terraform.CallAllModule,
+				CallModuleType:    opentofu.CallAllModule,
 				CallModuleTypeSet: true,
 				Force:             true,
 				ForceSet:          true,
@@ -620,7 +620,7 @@ func TestMerge(t *testing.T) {
 				},
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallAllModule,
+				CallModuleType:    opentofu.CallAllModule,
 				CallModuleTypeSet: true,
 				Force:             true,
 				ForceSet:          true,
@@ -673,7 +673,7 @@ func TestMerge(t *testing.T) {
 		{
 			name: "CLI --only argument and merge",
 			base: &Config{
-				CallModuleType:    terraform.CallAllModule,
+				CallModuleType:    opentofu.CallAllModule,
 				CallModuleTypeSet: true,
 				Force:             false,
 				IgnoreModules: map[string]bool{
@@ -707,7 +707,7 @@ func TestMerge(t *testing.T) {
 				},
 			},
 			other: &Config{
-				CallModuleType: terraform.CallLocalModule,
+				CallModuleType: opentofu.CallLocalModule,
 				Force:          true,
 				ForceSet:       true,
 				IgnoreModules: map[string]bool{
@@ -743,7 +743,7 @@ func TestMerge(t *testing.T) {
 				},
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallAllModule,
+				CallModuleType:    opentofu.CallAllModule,
 				CallModuleTypeSet: true,
 				Force:             true,
 				ForceSet:          true,
@@ -793,7 +793,7 @@ func TestMerge(t *testing.T) {
 		{
 			name: "merge rule config with CLI-based config",
 			base: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -809,7 +809,7 @@ func TestMerge(t *testing.T) {
 				Plugins: map[string]*PluginConfig{},
 			},
 			other: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -825,7 +825,7 @@ func TestMerge(t *testing.T) {
 				Plugins: map[string]*PluginConfig{},
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -844,7 +844,7 @@ func TestMerge(t *testing.T) {
 		{
 			name: "merge plugin config with CLI-based config",
 			base: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -865,7 +865,7 @@ func TestMerge(t *testing.T) {
 				},
 			},
 			other: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},
@@ -880,7 +880,7 @@ func TestMerge(t *testing.T) {
 				},
 			},
 			want: &Config{
-				CallModuleType:    terraform.CallLocalModule,
+				CallModuleType:    opentofu.CallLocalModule,
 				Force:             false,
 				IgnoreModules:     map[string]bool{},
 				Varfiles:          []string{},

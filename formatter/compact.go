@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/arsiba/tofulint/tflint"
 	hcl "github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func (f *Formatter) compactPrint(issues tflint.Issues, appErr error, sources map[string][]byte) {

@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/arsiba/tofulint/opentofu"
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/fatih/color"
 	"github.com/hashicorp/logutils"
 	flags "github.com/jessevdk/go-flags"
 	"github.com/terraform-linters/tflint/formatter"
-	"github.com/terraform-linters/tflint/terraform"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 // Exit codes are int values that represent an exit code for a particular error.
@@ -34,7 +34,7 @@ type CLI struct {
 
 	// fields for each module
 	config    *tflint.Config
-	loader    *terraform.Loader
+	loader    *opentofu.Loader
 	formatter *formatter.Formatter
 }
 

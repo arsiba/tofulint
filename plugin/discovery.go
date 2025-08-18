@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/arsiba/tofulint/tflint"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/mitchellh/go-homedir"
 	"github.com/terraform-linters/tflint-plugin-sdk/plugin/host2plugin"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 // Discovery searches and launches plugins according the passed configuration.

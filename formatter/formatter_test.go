@@ -1,8 +1,8 @@
 package formatter
 
 import (
+	"github.com/arsiba/tofulint/tflint"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 type testRule struct{}

@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/terraform-linters/tflint/tflint"
+	"github.com/arsiba/tofulint/tflint"
 )
 
 func Test_Discovery(t *testing.T) {

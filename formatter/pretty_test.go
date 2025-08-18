@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/fatih/color"
 	hcl "github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func Test_prettyPrint(t *testing.T) {

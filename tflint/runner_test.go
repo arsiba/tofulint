@@ -5,13 +5,13 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/arsiba/tofulint/opentofu"
+	"github.com/arsiba/tofulint/opentofu/addrs"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/terraform"
-	"github.com/terraform-linters/tflint/terraform/addrs"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -43,14 +43,14 @@ func Test_NewModuleRunners_nestedModules(t *testing.T) {
 			t.Fatal("This function must return 2 runners because the config has 2 modules")
 		}
 
-		expectedVars := map[string]map[string]*terraform.Variable{
+		expectedVars := map[string]map[string]*opentofu.Variable{
 			"module.root": {
 				"override": {
 					Name:        "override",
 					Default:     cty.StringVal("foo"),
 					Type:        cty.DynamicPseudoType,
 					Nullable:    true,
-					ParsingMode: terraform.VariableParseLiteral,
+					ParsingMode: opentofu.VariableParseLiteral,
 					DeclRange: hcl.Range{
 						Filename: filepath.Join("module", "module.tf"),
 						Start:    hcl.Pos{Line: 1, Column: 1},
@@ -62,7 +62,7 @@ func Test_NewModuleRunners_nestedModules(t *testing.T) {
 					Default:     cty.StringVal("bar"),
 					Type:        cty.DynamicPseudoType,
 					Nullable:    true,
-					ParsingMode: terraform.VariableParseLiteral,
+					ParsingMode: opentofu.VariableParseLiteral,
 					DeclRange: hcl.Range{
 						Filename: filepath.Join("module", "module.tf"),
 						Start:    hcl.Pos{Line: 4, Column: 1},
@@ -74,7 +74,7 @@ func Test_NewModuleRunners_nestedModules(t *testing.T) {
 					Default:     cty.UnknownVal(cty.DynamicPseudoType),
 					Type:        cty.DynamicPseudoType,
 					Nullable:    true,
-					ParsingMode: terraform.VariableParseLiteral,
+					ParsingMode: opentofu.VariableParseLiteral,
 					DeclRange: hcl.Range{
 						Filename: filepath.Join("module", "module.tf"),
 						Start:    hcl.Pos{Line: 5, Column: 1},
@@ -88,7 +88,7 @@ func Test_NewModuleRunners_nestedModules(t *testing.T) {
 					Default:     cty.StringVal("foo"),
 					Type:        cty.DynamicPseudoType,
 					Nullable:    true,
-					ParsingMode: terraform.VariableParseLiteral,
+					ParsingMode: opentofu.VariableParseLiteral,
 					DeclRange: hcl.Range{
 						Filename: filepath.Join("module", "module1", "resource.tf"),
 						Start:    hcl.Pos{Line: 1, Column: 1},
@@ -100,7 +100,7 @@ func Test_NewModuleRunners_nestedModules(t *testing.T) {
 					Default:     cty.StringVal("bar"),
 					Type:        cty.DynamicPseudoType,
 					Nullable:    true,
-					ParsingMode: terraform.VariableParseLiteral,
+					ParsingMode: opentofu.VariableParseLiteral,
 					DeclRange: hcl.Range{
 						Filename: filepath.Join("module", "module1", "resource.tf"),
 						Start:    hcl.Pos{Line: 4, Column: 1},
@@ -112,7 +112,7 @@ func Test_NewModuleRunners_nestedModules(t *testing.T) {
 					Default:     cty.UnknownVal(cty.DynamicPseudoType),
 					Type:        cty.DynamicPseudoType,
 					Nullable:    true,
-					ParsingMode: terraform.VariableParseLiteral,
+					ParsingMode: opentofu.VariableParseLiteral,
 					DeclRange: hcl.Range{
 						Filename: filepath.Join("module", "module1", "resource.tf"),
 						Start:    hcl.Pos{Line: 5, Column: 1},

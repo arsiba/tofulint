@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/arsiba/tofulint/plugin"
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint/plugin"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func (cli *CLI) printVersion(opts Options) int {

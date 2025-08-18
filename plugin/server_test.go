@@ -6,6 +6,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/go-version"
@@ -16,7 +17,6 @@ import (
 	"github.com/terraform-linters/tflint-plugin-sdk/plugin"
 	"github.com/terraform-linters/tflint-plugin-sdk/terraform/lang/marks"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/tflint"
 	"github.com/zclconf/go-cty/cty"
 )
 

@@ -5,11 +5,11 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/arsiba/tofulint/opentofu"
+	"github.com/arsiba/tofulint/opentofu/addrs"
+	"github.com/arsiba/tofulint/opentofu/lang"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
-	"github.com/terraform-linters/tflint/terraform"
-	"github.com/terraform-linters/tflint/terraform/addrs"
-	"github.com/terraform-linters/tflint/terraform/lang"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -17,9 +17,9 @@ import (
 // For variables interplation, it has Terraform eval context.
 // After checking, it accumulates results as issues.
 type Runner struct {
-	TFConfig *terraform.Config
+	TFConfig *opentofu.Config
 	Issues   Issues
-	Ctx      *terraform.Evaluator
+	Ctx      *opentofu.Evaluator
 
 	annotations map[string]Annotations
 	config      *Config
@@ -38,26 +38,26 @@ type Rule interface {
 // NewRunner returns new TFLint runner.
 // It prepares built-in context (workpace metadata, variables) from
 // received `terraform.Config` and `terraform.InputValues`.
-func NewRunner(originalWorkingDir string, c *Config, ants map[string]Annotations, cfg *terraform.Config, variables ...terraform.InputValues) (*Runner, error) {
+func NewRunner(originalWorkingDir string, c *Config, ants map[string]Annotations, cfg *opentofu.Config, variables ...opentofu.InputValues) (*Runner, error) {
 	path := "root"
 	if !cfg.Path.IsRoot() {
 		path = cfg.Path.String()
 	}
 	log.Printf("[INFO] Initialize new runner for %s", path)
 
-	variableValues, diags := terraform.VariableValues(cfg, variables...)
+	variableValues, diags := opentofu.VariableValues(cfg, variables...)
 	if diags.HasErrors() {
 		return nil, diags
 	}
-	ctx := &terraform.Evaluator{
-		Meta: &terraform.ContextMeta{
-			Env:                terraform.Workspace(),
+	ctx := &opentofu.Evaluator{
+		Meta: &opentofu.ContextMeta{
+			Env:                opentofu.Workspace(),
 			OriginalWorkingDir: originalWorkingDir,
 		},
 		ModulePath:     cfg.Path.UnkeyedInstanceShim(),
 		Config:         cfg.Root,
 		VariableValues: variableValues,
-		CallStack:      terraform.NewCallStack(),
+		CallStack:      opentofu.NewCallStack(),
 	}
 
 	runner := &Runner{
@@ -120,7 +120,7 @@ func NewModuleRunners(parent *Runner) ([]*Runner, error) {
 
 		for _, body := range moduleCallBodies {
 			modVars := map[string]*moduleVariable{}
-			inputs := terraform.InputValues{}
+			inputs := opentofu.InputValues{}
 			for varName, attribute := range body.Attributes {
 				val, diags := parent.Ctx.EvaluateExpr(attribute.Expr, cty.DynamicPseudoType)
 				if diags.HasErrors() {
@@ -133,7 +133,7 @@ func NewModuleRunners(parent *Runner) ([]*Runner, error) {
 					log.Printf("[ERROR] %s", err)
 					return runners, err
 				}
-				inputs[varName] = &terraform.InputValue{Value: val}
+				inputs[varName] = &opentofu.InputValue{Value: val}
 
 				if parent.TFConfig.Path.IsRoot() {
 					modVars[varName] = &moduleVariable{

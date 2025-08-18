@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/arsiba/tofulint/opentofu"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint/terraform"
 )
 
 // TestRunner returns a runner for testing.
@@ -30,7 +30,7 @@ func TestRunnerWithConfig(t *testing.T, files map[string]string, config *Config)
 		t.Fatal(err)
 	}
 
-	loader, err := terraform.NewLoader(fs, originalWd)
+	loader, err := opentofu.NewLoader(fs, originalWd)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,7 +61,7 @@ func TestRunnerWithConfig(t *testing.T, files map[string]string, config *Config)
 		t.Fatal(diags)
 	}
 
-	runner, err := NewRunner(originalWd, config, map[string]Annotations{}, configs, map[string]*terraform.InputValue{})
+	runner, err := NewRunner(originalWd, config, map[string]Annotations{}, configs, map[string]*opentofu.InputValue{})
 	if err != nil {
 		t.Fatal(err)
 	}

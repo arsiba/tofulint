@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/arsiba/tofulint/opentofu"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
 	"github.com/hashicorp/hcl/v2/hclparse"
@@ -14,7 +15,6 @@ import (
 	"github.com/spf13/afero"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/terraform"
 )
 
 var defaultConfigFile = ".tflint.hcl"
@@ -61,7 +61,7 @@ var validFormats = []string{
 
 // Config describes the behavior of TFLint
 type Config struct {
-	CallModuleType    terraform.CallModuleType
+	CallModuleType    opentofu.CallModuleType
 	CallModuleTypeSet bool
 
 	Force    bool
@@ -113,7 +113,7 @@ type PluginConfig struct {
 // It is mainly used for testing
 func EmptyConfig() *Config {
 	return &Config{
-		CallModuleType:    terraform.CallLocalModule,
+		CallModuleType:    opentofu.CallLocalModule,
 		Force:             false,
 		IgnoreModules:     map[string]bool{},
 		Varfiles:          []string{},
@@ -233,7 +233,7 @@ func loadConfig(file afero.File) (*Config, error) {
 					if err := gohcl.DecodeExpression(attr.Expr, nil, &callModuleType); err != nil {
 						return config, err
 					}
-					config.CallModuleType, err = terraform.AsCallModuleType(callModuleType)
+					config.CallModuleType, err = opentofu.AsCallModuleType(callModuleType)
 					if err != nil {
 						return config, err
 					}
@@ -251,9 +251,9 @@ func loadConfig(file afero.File) (*Config, error) {
 						return config, err
 					}
 					if module {
-						config.CallModuleType = terraform.CallAllModule
+						config.CallModuleType = opentofu.CallAllModule
 					} else {
-						config.CallModuleType = terraform.CallNoModule
+						config.CallModuleType = opentofu.CallNoModule
 					}
 
 				case "force":

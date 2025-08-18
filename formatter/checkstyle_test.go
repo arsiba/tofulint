@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"testing"
 
+	"github.com/arsiba/tofulint/tflint"
 	hcl "github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func Test_checkstylePrint(t *testing.T) {

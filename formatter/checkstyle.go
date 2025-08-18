@@ -4,7 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 
-	"github.com/terraform-linters/tflint/tflint"
+	"github.com/arsiba/tofulint/tflint"
 )
 
 type checkstyleError struct {

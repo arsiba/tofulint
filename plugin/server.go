@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/arsiba/tofulint/opentofu"
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/hashicorp/go-version"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 	"github.com/terraform-linters/tflint-plugin-sdk/plugin/plugin2host"
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
-	"github.com/terraform-linters/tflint/terraform"
-	"github.com/terraform-linters/tflint/tflint"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -42,8 +42,8 @@ func (s *GRPCServer) GetModulePath() []string {
 
 // GetModuleContent returns module content based on the passed schema and options.
 func (s *GRPCServer) GetModuleContent(bodyS *hclext.BodySchema, opts sdk.GetModuleContentOption) (*hclext.BodyContent, hcl.Diagnostics) {
-	var module *terraform.Module
-	var ctx *terraform.Evaluator
+	var module *opentofu.Module
+	var ctx *opentofu.Evaluator
 
 	switch opts.ModuleCtx {
 	case sdk.SelfModuleCtxType:

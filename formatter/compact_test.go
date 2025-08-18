@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/arsiba/tofulint/tflint"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func Test_compactPrint(t *testing.T) {
