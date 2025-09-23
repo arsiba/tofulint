@@ -6,39 +6,40 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/arsiba/tofulint)](https://goreportcard.com/report/github.com/arsiba/tofulint)
 [![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/tflint.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/tflint)
 
-A Pluggable [OpenTofu](https://opentofu.org/) Linter
+A **pluggable** [OpenTofu](https://opentofu.org/) linter inspired by TFLint.
+
+## ⚠️ Disclaimer
+`TofuLint` is an **experimental** fork of `TFLint` that replaces Terraform internals with **OpenTofu**.  
+It is **highly experimental** and **not production-ready**. Use at your own risk.
+
 
 ## Features
 
-TofuLint is a framework, forked and modified from TFLint, and each feature is provided by plugins, the key features are as follows:
+TofuLint is a modular framework where each feature is provided via plugins. Key features include:
 
-- Find possible errors (like invalid instance types) for Major Cloud providers (AWS/Azure/GCP).
-- Warn about deprecated syntax, unused declarations.
-- Enforce best practices, naming conventions.
+- Detect potential errors (e.g., invalid instance types) for major cloud providers: AWS, Azure, GCP.  
+- Warn about deprecated syntax and unused declarations.  
+- Enforce best practices and naming conventions.  
 
 ## Installation
+Currently, only one installation method is available:
 
-Only one installation method is in this early development stage available:
-
-Bash script (Linux):
-
-```console
+### Bash (Linux)
+```bash
 curl -s https://raw.githubusercontent.com/arsiba/tofulint/master/install_linux.sh | bash
-```
+````
 
 ### Verification
-
-Right now, no releases are verified or signed.
+At this stage, no releases are verified or signed.
 
 ### Docker
-
-In a future release, Instead of installing directly, you will be able to use an Docker image:
+A Docker-based installation will be available in a future release.
 
 ## Getting Started
+TofuLint comes bundled with a [Terraform language ruleset](https://github.com/terraform-linters/tflint-ruleset-terraform), enabling recommended rules by default.
 
-First, enable rules for [Terraform Language](https://www.terraform.io/language) (e.g. warn about deprecated syntax, unused declarations). [TFLint Ruleset for Terraform Language](https://github.com/terraform-linters/tflint-ruleset-terraform) is bundled with TFLint, so you can use it without installing it separately.
-
-The bundled plugin enables the "recommended" preset by default, but you can disable the plugin or use a different preset. Declare the plugin block in `.tflint.hcl` like this:
+### Enabling the Terraform Plugin
+Declare the plugin block in your `.tflint.hcl`:
 
 ```hcl
 plugin "terraform" {
@@ -47,15 +48,23 @@ plugin "terraform" {
 }
 ```
 
-See the [tflint-ruleset-terraform documentation](https://github.com/terraform-linters/tflint-ruleset-terraform/blob/main/docs/configuration.md) for more information.
+More details: [TFLint Terraform Ruleset Configuration](https://github.com/terraform-linters/tflint-ruleset-terraform/blob/main/docs/configuration.md)
 
-Next, If you are using an AWS/Azure/GCP provider, it is a good idea to install the plugin and try it according to each usage:
+### Cloud Provider Plugins
 
-- [Amazon Web Services](https://github.com/terraform-linters/tflint-ruleset-aws)
-- [Microsoft Azure](https://github.com/terraform-linters/tflint-ruleset-azurerm)
-- [Google Cloud Platform](https://github.com/terraform-linters/tflint-ruleset-google)
+If you use a cloud provider, install the corresponding plugin:
 
-If you want to extend TFLint with other plugins, you can declare the plugins in the config file and easily install them with `tflint --init`.
+* [AWS](https://github.com/terraform-linters/tflint-ruleset-aws)
+* [Azure](https://github.com/terraform-linters/tflint-ruleset-azurerm)
+* [GCP](https://github.com/terraform-linters/tflint-ruleset-google)
+
+Other plugins can be added via `.tflint.hcl` and installed with:
+
+```bash
+tflint --init
+```
+
+### Example Plugin Configuration
 
 ```hcl
 plugin "foo" {
@@ -65,70 +74,68 @@ plugin "foo" {
 
   signing_key = <<-KEY
   -----BEGIN PGP PUBLIC KEY BLOCK-----
-
-  mQINBFzpPOMBEADOat4P4z0jvXaYdhfy+UcGivb2XYgGSPQycTgeW1YuGLYdfrwz
-  9okJj9pMMWgt/HpW8WrJOLv7fGecFT3eIVGDOzyT8j2GIRJdXjv8ZbZIn1Q+1V72
-  AkqlyThflWOZf8GFrOw+UAR1OASzR00EDxC9BqWtW5YZYfwFUQnmhxU+9Cd92e6i
   ...
   KEY
 }
 ```
 
-See also [Configuring Plugins](docs/user-guide/plugins.md).
+For custom rules, create your own plugin or use Rego policies:
 
-If you want to add custom rules that are not in existing plugins, you can build your own plugin or write your own policy in Rego. See [Writing Plugins](docs/developer-guide/plugins.md) or [OPA Ruleset](https://github.com/terraform-linters/tflint-ruleset-opa).
+* [Writing Plugins](docs/developer-guide/plugins.md)
+* [OPA Ruleset](https://github.com/terraform-linters/tflint-ruleset-opa)
+
 
 ## Usage
 
-TofuLint inspects files under the current directory by default. You can change the behavior with the following options/arguments:
+By default, TofuLint inspects files in the current directory. Example options:
 
-```
+```bash
 $ tofulint --help
 Usage:
   tofulint --chdir=DIR/--recursive [OPTIONS]
 
 Application Options:
-  -v, --version                                                 Print TofuLint version
-      --init                                                    Install plugins
-      --langserver                                              Start language server
-  -f, --format=[default|json|checkstyle|junit|compact|sarif]    Output format
-  -c, --config=FILE                                             Config file name (default: .tflint.hcl)
-      --ignore-module=SOURCE                                    Ignore module sources
-      --enable-rule=RULE_NAME                                   Enable rules from the command line
-      --disable-rule=RULE_NAME                                  Disable rules from the command line
-      --only=RULE_NAME                                          Enable only this rule, disabling all other defaults. Can be specified multiple times
-      --enable-plugin=PLUGIN_NAME                               Enable plugins from the command line
-      --var-file=FILE                                           Terraform variable file name
-      --var='foo=bar'                                           Set a Terraform variable
-      --call-module-type=[all|local|none]                       Types of module to call (default: local)
-      --chdir=DIR                                               Switch to a different working directory before executing the command
-      --recursive                                               Run command in each directory recursively
-      --filter=FILE                                             Filter issues by file names or globs
-      --force                                                   Return zero exit status even if issues found
-      --minimum-failure-severity=[error|warning|notice]         Sets minimum severity level for exiting with a non-zero error code
-      --color                                                   Enable colorized output
-      --no-color                                                Disable colorized output
-      --fix                                                     Fix issues automatically
-      --no-parallel-runners                                     Disable per-runner parallelism
+  -v, --version                         Print TofuLint version
+      --init                            Install plugins
+      --langserver                      Start language server
+  -f, --format=[default|json|checkstyle|junit|compact|sarif] Output format
+  -c, --config=FILE                     Config file name (default: .tflint.hcl)
+      --ignore-module=SOURCE            Ignore module sources
+      --enable-rule=RULE_NAME           Enable rules from the command line
+      --disable-rule=RULE_NAME          Disable rules from the command line
+      --only=RULE_NAME                  Enable only this rule
+      --enable-plugin=PLUGIN_NAME       Enable plugins from the command line
+      --var-file=FILE                    Terraform variable file
+      --var='foo=bar'                    Set a Terraform variable
+      --call-module-type=[all|local|none] Types of module to call (default: local)
+      --chdir=DIR                        Change working directory
+      --recursive                        Run recursively in subdirectories
+      --filter=FILE                       Filter issues by file names/globs
+      --force                             Return zero exit code even if issues found
+      --minimum-failure-severity=[error|warning|notice] Minimum severity for non-zero exit
+      --color                             Enable colorized output
+      --no-color                          Disable colorized output
+      --fix                               Automatically fix issues
+      --no-parallel-runners               Disable parallelism
 
 Help Options:
-  -h, --help                                                    Show this help message
+  -h, --help                             Show this help message
 ```
 
-See [User Guide](docs/user-guide) for details.
+See [User Guide](docs/user-guide) for more details.
 
 ## Debugging
 
-If you don't get the expected behavior, you can see the detailed logs when running with `TFLINT_LOG` environment variable.
+Enable detailed logs using the `TFLINT_LOG` environment variable:
 
-```console
-$ TFLINT_LOG=debug tflint
+```bash
+$ TFLINT_LOG=debug tofulint
 ```
-
 ## Developing
 
-See [Developer Guide](docs/developer-guide).
+See [Developer Guide](docs/developer-guide) for instructions on contributing and building plugins.
 
 ## Security
 
-Please refer our [security policy](SECURITY.md).
+For reporting security issues, refer to our [security policy](SECURITY.md).
+
