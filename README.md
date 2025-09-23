@@ -61,7 +61,7 @@ If you use a cloud provider, install the corresponding plugin:
 Other plugins can be added via `.tflint.hcl` and installed with:
 
 ```bash
-tflint --init
+tofulint --init
 ```
 
 ### Example Plugin Configuration
