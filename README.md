@@ -1,4 +1,4 @@
-# TFLint
+# TofuLint
 [![Build Status](https://github.com/arsiba/tofulint/workflows/build/badge.svg?branch=master)](https://github.com/arsiba/tofulint/actions)
 [![GitHub release](https://img.shields.io/github/release/terraform-linters/tflint.svg)](https://github.com/arsiba/tofulint/releases/latest)
 [![Terraform Compatibility](https://img.shields.io/badge/terraform-%3E%3D%201.0-blue)](docs/user-guide/compatibility.md)
@@ -6,11 +6,11 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/arsiba/tofulint)](https://goreportcard.com/report/github.com/arsiba/tofulint)
 [![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/tflint.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/tflint)
 
-A Pluggable [Terraform](https://www.terraform.io/) Linter
+A Pluggable [OpenTofu](https://opentofu.org/) Linter
 
 ## Features
 
-TFLint is a framework and each feature is provided by plugins, the key features are as follows:
+TofuLint is a framework, forked and modified from TFLint, and each feature is provided by plugins, the key features are as follows:
 
 - Find possible errors (like invalid instance types) for Major Cloud providers (AWS/Azure/GCP).
 - Warn about deprecated syntax, unused declarations.
@@ -18,50 +18,25 @@ TFLint is a framework and each feature is provided by plugins, the key features 
 
 ## Installation
 
+Only one installation method is in this early development stage available:
+
 Bash script (Linux):
 
 ```console
-curl -s https://raw.githubusercontent.com/terraform-linters/tflint/master/install_linux.sh | bash
+curl -s https://raw.githubusercontent.com/arsiba/tofulint/master/install_linux.sh | bash
 ```
-
-Homebrew (macOS):
-
-```console
-brew install tflint
-```
-
-Chocolatey (Windows):
-
-```cmd
-choco install tflint
-```
-
-NOTE: The Chocolatey package is NOT directly maintained by the TFLint maintainers. The latest version is always available by manual installation.
 
 ### Verification
 
-Releases are signed by [Cosign](https://github.com/sigstore/cosign). `cosign verify-blob` ensures that the release was built with this repository's GitHub Actions.
-
-```
-cosign verify-blob --certificate=checksums.txt.pem --signature=checksums.txt.keyless.sig --certificate-identity-regexp="^https://github.com/arsiba/tofulint" --certificate-oidc-issuer=https://token.actions.githubusercontent.com checksums.txt
-sha256sum --ignore-missing -c checksums.txt
-```
+Right now, no releases are verified or signed.
 
 ### Docker
 
-Instead of installing directly, you can use the Docker image:
-
-```console
-docker run --rm -v $(pwd):/data -t ghcr.io/terraform-linters/tflint
-```
-
-### GitHub Actions
-
-If you want to run on GitHub Actions, [setup-tflint](https://github.com/terraform-linters/setup-tflint) action is available.
+In a future release, Instead of installing directly, you will be able to use an Docker image:
 
 ## Getting Started
 
-First, enable rules for [Terraform Language](https://www.terraform.io/language) (e.g. warn about deprecated syntax, unused declarations). [TFLint Ruleset for Terraform Language](https://github.com/arsiba/tofulint-ruleset-terraform) is bundled with TFLint, so you can use it without installing it separately.
+First, enable rules for [Terraform Language](https://www.terraform.io/language) (e.g. warn about deprecated syntax, unused declarations). [TFLint Ruleset for Terraform Language](https://github.com/terraform-linters/tflint-ruleset-terraform) is bundled with TFLint, so you can use it without installing it separately.
 
 The bundled plugin enables the "recommended" preset by default, but you can disable the plugin or use a different preset. Declare the plugin block in `.tflint.hcl` like this:
 
@@ -72,13 +47,13 @@ plugin "terraform" {
 }
 ```
 
-See the [tflint-ruleset-terraform documentation](https://github.com/arsiba/tofulint-ruleset-terraform/blob/main/docs/configuration.md) for more information.
+See the [tflint-ruleset-terraform documentation](https://github.com/terraform-linters/tflint-ruleset-terraform/blob/main/docs/configuration.md) for more information.
 
 Next, If you are using an AWS/Azure/GCP provider, it is a good idea to install the plugin and try it according to each usage:
 
-- [Amazon Web Services](https://github.com/arsiba/tofulint-ruleset-aws)
-- [Microsoft Azure](https://github.com/arsiba/tofulint-ruleset-azurerm)
-- [Google Cloud Platform](https://github.com/arsiba/tofulint-ruleset-google)
+- [Amazon Web Services](https://github.com/terraform-linters/tflint-ruleset-aws)
+- [Microsoft Azure](https://github.com/terraform-linters/tflint-ruleset-azurerm)
+- [Google Cloud Platform](https://github.com/terraform-linters/tflint-ruleset-google)
 
 If you want to extend TFLint with other plugins, you can declare the plugins in the config file and easily install them with `tflint --init`.
 
@@ -101,19 +76,19 @@ plugin "foo" {
 
 See also [Configuring Plugins](docs/user-guide/plugins.md).
 
-If you want to add custom rules that are not in existing plugins, you can build your own plugin or write your own policy in Rego. See [Writing Plugins](docs/developer-guide/plugins.md) or [OPA Ruleset](https://github.com/arsiba/tofulint-ruleset-opa).
+If you want to add custom rules that are not in existing plugins, you can build your own plugin or write your own policy in Rego. See [Writing Plugins](docs/developer-guide/plugins.md) or [OPA Ruleset](https://github.com/terraform-linters/tflint-ruleset-opa).
 
 ## Usage
 
-TFLint inspects files under the current directory by default. You can change the behavior with the following options/arguments:
+TofuLint inspects files under the current directory by default. You can change the behavior with the following options/arguments:
 
 ```
-$ tflint --help
+$ tofulint --help
 Usage:
-  tflint --chdir=DIR/--recursive [OPTIONS]
+  tofulint --chdir=DIR/--recursive [OPTIONS]
 
 Application Options:
-  -v, --version                                                 Print TFLint version
+  -v, --version                                                 Print TofuLint version
       --init                                                    Install plugins
       --langserver                                              Start language server
   -f, --format=[default|json|checkstyle|junit|compact|sarif]    Output format
@@ -156,8 +131,4 @@ See [Developer Guide](docs/developer-guide).
 
 ## Security
 
-If you find a security vulnerability, please refer our [security policy](SECURITY.md).
-
-## Stargazers over time
-
-[![Stargazers over time](https://starchart.cc/terraform-linters/tflint.svg)](https://starchart.cc/terraform-linters/tflint)
+Please refer our [security policy](SECURITY.md).
