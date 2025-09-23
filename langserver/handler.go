@@ -52,11 +52,11 @@ func NewHandler(configPath string, cliConfig *tflint.Config) (jsonrpc2.Handler, 
 				// VersionConstraints endpoint is available in tflint-plugin-sdk v0.14+.
 				return nil, nil, fmt.Errorf(`Plugin "%s" SDK version is incompatible. Compatible versions: %s`, name, plugin.SDKVersionConstraints)
 			} else {
-				return nil, nil, fmt.Errorf(`Failed to get TFLint version constraints to "%s" plugin; %w`, name, err)
+				return nil, nil, fmt.Errorf(`Failed to get TofuLint version constraints to "%s" plugin; %w`, name, err)
 			}
 		}
 		if !constraints.Check(tflint.Version) {
-			return nil, nil, fmt.Errorf("Failed to satisfy version constraints; tflint-ruleset-%s requires %s, but TFLint version is %s", name, constraints, tflint.Version)
+			return nil, nil, fmt.Errorf("Failed to satisfy version constraints; tflint-ruleset-%s requires %s, but TofuLint version is %s", name, constraints, tflint.Version)
 		}
 
 		clientSDKVersions[name], err = ruleset.SDKVersion()

@@ -19,7 +19,7 @@ import (
 )
 
 // ExpandBlock expands "dynamic" blocks and resources/modules with count/for_each.
-// Note that Terraform only expands dynamic blocks, but TFLint also expands
+// Note that Terraform only expands dynamic blocks, but TofuLint also expands
 // count/for_each here.
 //
 // Expressions in expanded blocks are evaluated immediately, so all variables
@@ -136,7 +136,7 @@ func (s *Scope) evalContext(refs []*addrs.Reference, selfAddr addrs.Referenceabl
 
 		switch subj := rawSubj.(type) {
 		case addrs.Resource:
-			// Managed resources are not supported by TFLint, but it does support arbitrary
+			// Managed resources are not supported by TofuLint, but it does support arbitrary
 			// key names, so it gathers the referenced resource names.
 			if subj.Mode != addrs.ManagedResourceMode {
 				continue
@@ -189,7 +189,7 @@ func (s *Scope) evalContext(refs []*addrs.Reference, selfAddr addrs.Referenceabl
 	vals["count"] = cty.ObjectVal(countAttrs)
 	vals["each"] = cty.ObjectVal(forEachAttrs)
 
-	// The following are unknown values as they are not supported by TFLint.
+	// The following are unknown values as they are not supported by TofuLint.
 	vals["resource"] = cty.UnknownVal(cty.DynamicPseudoType)
 	vals["data"] = cty.UnknownVal(cty.DynamicPseudoType)
 	vals["module"] = cty.UnknownVal(cty.DynamicPseudoType)

@@ -31,7 +31,7 @@ It's a good idea to add a reason for why a rule is ignored, especially temporari
 
 ```hcl
 resource "aws_instance" "foo" {
-    # This instance type is new and TFLint doesn't know about it yet
+    # This instance type is new and TofuLint doesn't know about it yet
     # tflint-ignore: aws_instance_invalid_type
     instance_type = "t10.2xlarge"
 }
@@ -41,7 +41,7 @@ Or, on the same line:
 
 ```hcl
 resource "aws_instance" "foo" {
-  # tflint-ignore: aws_instance_invalid_type # too new for TFLint
+  # tflint-ignore: aws_instance_invalid_type # too new for TofuLint
   instance_type = "t10.2xlarge" 
 }
 ```
@@ -50,7 +50,7 @@ The `//` comment style is also supported, but Terraform recommends `#`.
 
 ```hcl
 resource "aws_instance" "foo" {
-  // tflint-ignore: aws_instance_invalid_type // too new for TFLint
+  // tflint-ignore: aws_instance_invalid_type // too new for TofuLint
   instance_type = "t10.2xlarge" 
 }
 ```

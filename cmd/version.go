@@ -10,7 +10,7 @@ import (
 )
 
 func (cli *CLI) printVersion(opts Options) int {
-	fmt.Fprintf(cli.outStream, "TFLint version %s\n", tflint.Version)
+	fmt.Fprintf(cli.outStream, "TofuLint version %s\n", tflint.Version)
 
 	workingDirs, err := findWorkingDirs(opts)
 	if err != nil {
@@ -51,7 +51,7 @@ func getPluginVersions(opts Options) []string {
 	// Load configuration files to print plugin versions
 	cfg, err := tflint.LoadConfig(afero.Afero{Fs: afero.NewOsFs()}, opts.Config)
 	if err != nil {
-		log.Printf("[ERROR] Failed to load TFLint config: %s", err)
+		log.Printf("[ERROR] Failed to load TofuLint config: %s", err)
 		return []string{}
 	}
 	cfg.Merge(opts.toConfig())

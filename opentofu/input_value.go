@@ -36,7 +36,7 @@ func DefaultVariableValues(configs map[string]*Variable) InputValues {
 	for k, c := range configs {
 		val := c.Default
 		// cty.NilVal means no default declared in the variable. Terraform collects this value interactively,
-		// while TFLint marks it as unknown and continues inspection.
+		// while TofuLint marks it as unknown and continues inspection.
 		if c.Default == cty.NilVal {
 			val = cty.UnknownVal(c.Type)
 		}

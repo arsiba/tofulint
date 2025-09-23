@@ -159,7 +159,7 @@ func pluginClientError(err error, config *tflint.PluginConfig) error {
 		message = strings.Replace(
 			message,
 			search,
-			fmt.Sprintf(`TFLint is not compatible with this version of the %q plugin. A newer TFLint or plugin version may be required.`, config.Name),
+			fmt.Sprintf(`TofuLint is not compatible with this version of the %q plugin. A newer TofuLint or plugin version may be required.`, config.Name),
 			-1,
 		)
 

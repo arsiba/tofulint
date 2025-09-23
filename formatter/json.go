@@ -10,7 +10,7 @@ import (
 	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
-// JSONIssue is a temporary structure for converting TFLint issues to JSON.
+// JSONIssue is a temporary structure for converting TofuLint issues to JSON.
 type JSONIssue struct {
 	Rule    JSONRule    `json:"rule"`
 	Message string      `json:"message"`
@@ -18,7 +18,7 @@ type JSONIssue struct {
 	Callers []JSONRange `json:"callers"`
 }
 
-// JSONRule is a temporary structure for converting TFLint rules to JSON.
+// JSONRule is a temporary structure for converting TofuLint rules to JSON.
 type JSONRule struct {
 	Name     string `json:"name"`
 	Severity string `json:"severity"`

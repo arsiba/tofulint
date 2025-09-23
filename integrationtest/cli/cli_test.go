@@ -33,7 +33,7 @@ func TestIntegration(t *testing.T) {
 			command: "./tflint --version",
 			dir:     "no_issues",
 			status:  cmd.ExitCodeOK,
-			stdout:  fmt.Sprintf("TFLint version %s", tflint.Version),
+			stdout:  fmt.Sprintf("TofuLint version %s", tflint.Version),
 		},
 		{
 			name:    "print help",

@@ -113,7 +113,7 @@ func (cli *CLI) inspectModule(opts Options, dir string, filterFiles []string) (t
 	// Setup config
 	cli.config, err = tflint.LoadConfig(afero.Afero{Fs: afero.NewOsFs()}, opts.Config)
 	if err != nil {
-		return issues, changes, fmt.Errorf("Failed to load TFLint config; %w", err)
+		return issues, changes, fmt.Errorf("Failed to load TofuLint config; %w", err)
 	}
 	cli.config.Merge(opts.toConfig())
 
@@ -295,11 +295,11 @@ func launchPlugins(config *tflint.Config, fix bool) (*plugin.Plugin, error) {
 				// VersionConstraints endpoint is available in tflint-plugin-sdk v0.14+.
 				return rulesetPlugin, fmt.Errorf(`Plugin "%s" SDK version is incompatible. Compatible versions: %s`, name, plugin.SDKVersionConstraints)
 			} else {
-				return rulesetPlugin, fmt.Errorf(`Failed to get TFLint version constraints to "%s" plugin; %w`, name, err)
+				return rulesetPlugin, fmt.Errorf(`Failed to get TofuLint version constraints to "%s" plugin; %w`, name, err)
 			}
 		}
 		if !constraints.Check(tflint.Version) {
-			return rulesetPlugin, fmt.Errorf("Failed to satisfy version constraints; tflint-ruleset-%s requires %s, but TFLint version is %s", name, constraints, tflint.Version)
+			return rulesetPlugin, fmt.Errorf("Failed to satisfy version constraints; tflint-ruleset-%s requires %s, but TofuLint version is %s", name, constraints, tflint.Version)
 		}
 
 		if err := ruleset.ApplyGlobalConfig(pluginConf); err != nil {

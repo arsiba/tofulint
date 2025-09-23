@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 )
 
-// Annotation represents comments with special meaning in TFLint
+// Annotation represents comments with special meaning in TofuLint
 type Annotation interface {
 	IsAffected(*Issue) bool
 	String() string

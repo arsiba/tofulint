@@ -30,7 +30,7 @@ func (cli *CLI) init(opts Options) int {
 
 			cfg, err := tflint.LoadConfig(afero.Afero{Fs: afero.NewOsFs()}, opts.Config)
 			if err != nil {
-				return fmt.Errorf("Failed to load TFLint config; %w", err)
+				return fmt.Errorf("Failed to load TofuLint config; %w", err)
 			}
 
 			found := false

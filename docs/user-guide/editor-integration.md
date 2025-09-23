@@ -1,6 +1,6 @@
 # Editor Integration
 
-TFLint can also act as a Language Server to integrate with various editors. This server conforms to [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) v3.14.0 and can be used with an editor that implements any client. The following is an example in VS Code:
+TofuLint can also act as a Language Server to integrate with various editors. This server conforms to [Language Server Protocol](https://microsoft.github.io/language-server-protocol/) v3.14.0 and can be used with an editor that implements any client. The following is an example in VS Code:
 
 ![demo](../assets/lsp_demo.gif)
 

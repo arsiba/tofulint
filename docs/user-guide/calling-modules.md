@@ -1,6 +1,6 @@
 # Calling Modules
 
-You can inspect not only the root module but also [module calls](https://developer.hashicorp.com/terraform/language/modules/syntax#calling-a-child-module). TFLint evaluates each call (i.e. `module` block) and emits any issues that result from the specified input variables.
+You can inspect not only the root module but also [module calls](https://developer.hashicorp.com/terraform/language/modules/syntax#calling-a-child-module). TofuLint evaluates each call (i.e. `module` block) and emits any issues that result from the specified input variables.
 
 ```hcl
 module "aws_instance" {
@@ -26,7 +26,7 @@ Callers:
 
 ```
 
-By default, TFLint only calls local modules whose the `source` is a relative path like `./*`. If you want to call remote modules (registry, git, etc.), you must run `terraform init` (or `terraform get`) before invoking TFLint so that modules are loaded into the `.terraform` directory. After that, invoke TFLint with `--call-module-type=all`.
+By default, TofuLint only calls local modules whose the `source` is a relative path like `./*`. If you want to call remote modules (registry, git, etc.), you must run `terraform init` (or `terraform get`) before invoking TofuLint so that modules are loaded into the `.terraform` directory. After that, invoke TofuLint with `--call-module-type=all`.
 
 ```console
 $ terraform init
@@ -57,4 +57,4 @@ $ tflint --ignore-module=./module
 
 * Issues _must_ be associated with a variable that was passed to the module. If an issue within a child module is detected in an expression that does not reference a variable (`var`), it will be discarded.
 * Rules that evaluate syntax rather than content _should_ ignore child modules.
-* If you want to evaluate all TFLint rules on non-root modules, inspect directly against the module directories. Note that there is a difference between calling a child module in an inspection and inspecting a child module as the root module.
+* If you want to evaluate all TofuLint rules on non-root modules, inspect directly against the module directories. Note that there is a difference between calling a child module in an inspection and inspecting a child module as the root module.

@@ -35,7 +35,7 @@ type Rule interface {
 	Link() string
 }
 
-// NewRunner returns new TFLint runner.
+// NewRunner returns new TofuLint runner.
 // It prepares built-in context (workpace metadata, variables) from
 // received `terraform.Config` and `terraform.InputValues`.
 func NewRunner(originalWorkingDir string, c *Config, ants map[string]Annotations, cfg *opentofu.Config, variables ...opentofu.InputValues) (*Runner, error) {
@@ -73,7 +73,7 @@ func NewRunner(originalWorkingDir string, c *Config, ants map[string]Annotations
 	return runner, nil
 }
 
-// NewModuleRunners returns new TFLint runners for child modules
+// NewModuleRunners returns new TofuLint runners for child modules
 // Recursively search modules and generate Runners
 // In order to propagate attributes of moduleCall as variables to the module,
 // evaluate the variables. If it cannot be evaluated, treat it as unknown
@@ -270,7 +270,7 @@ func (r *Runner) RuleConfig(ruleName string) *RuleConfig {
 	return r.config.Rules[ruleName]
 }
 
-// ConfigSources returns the sources of TFLint config files
+// ConfigSources returns the sources of TofuLint config files
 func (r *Runner) ConfigSources() map[string][]byte {
 	return r.config.Sources()
 }

@@ -59,7 +59,7 @@ var validFormats = []string{
 	"sarif",
 }
 
-// Config describes the behavior of TFLint
+// Config describes the behavior of TofuLint
 type Config struct {
 	CallModuleType    opentofu.CallModuleType
 	CallModuleTypeSet bool
@@ -86,14 +86,14 @@ type Config struct {
 	sources map[string][]byte
 }
 
-// RuleConfig is a TFLint's rule config
+// RuleConfig is a TofuLint's rule config
 type RuleConfig struct {
 	Name    string   `hcl:"name,label"`
 	Enabled bool     `hcl:"enabled"`
 	Body    hcl.Body `hcl:",remain"`
 }
 
-// PluginConfig is a TFLint's plugin config
+// PluginConfig is a TofuLint's plugin config
 type PluginConfig struct {
 	Name       string `hcl:"name,label"`
 	Enabled    bool   `hcl:"enabled"`
@@ -124,7 +124,7 @@ func EmptyConfig() *Config {
 	}
 }
 
-// LoadConfig loads TFLint config file.
+// LoadConfig loads TofuLint config file.
 // The priority of the configuration files is as follows:
 //
 // 1. file passed by the --config option

@@ -1,6 +1,6 @@
-# Configuring TFLint
+# Configuring TofuLint
 
-You can change the behavior not only in CLI flags but also in config files. TFLint loads config files according to the following priority order:
+You can change the behavior not only in CLI flags but also in config files. TofuLint loads config files according to the following priority order:
 
 1. File passed by the `--config` option
 2. File set by the `TFLINT_CONFIG_FILE` environment variable
@@ -89,7 +89,7 @@ $ tflint --call-module-type=all
 
 CLI flag: `--force`
 
-Return zero exit status even if issues found. TFLint returns the following exit statuses on exit by default:
+Return zero exit status even if issues found. TofuLint returns the following exit statuses on exit by default:
 
 - 0: No issues found
 - 1: Errors occurred
@@ -178,7 +178,7 @@ $ tflint --var "foo=bar" --var "bar=[\"baz\"]"
 
 CLI flag: `--enable-rule`, `--disable-rule`
 
-You can configure TFLint rules using `rule` blocks. Each rule's implementation specifies whether it will be enabled by default. In some rulesets, the majority of rules are disabled by default. Use `rule` blocks to enable them:
+You can configure TofuLint rules using `rule` blocks. Each rule's implementation specifies whether it will be enabled by default. In some rulesets, the majority of rules are disabled by default. Use `rule` blocks to enable them:
 
 ```hcl
 rule "terraform_unused_declarations" {

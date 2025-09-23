@@ -1,11 +1,11 @@
 # Environment Variables
 
-Below is a list of environment variables available in TFLint.
+Below is a list of environment variables available in TofuLint.
 
 - `TFLINT_LOG`
   - Print logs to stderr. See [Debugging](../../README.md#debugging).
 - `TFLINT_CONFIG_FILE`
-  - Configure the config file path. See [Configuring TFLint](./config.md).
+  - Configure the config file path. See [Configuring TofuLint](./config.md).
 - `TFLINT_PLUGIN_DIR`
   - Configure the plugin directory. See [Configuring Plugins](./plugins.md).
 - `TF_VAR_name`

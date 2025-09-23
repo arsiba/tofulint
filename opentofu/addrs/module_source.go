@@ -138,7 +138,7 @@ func (s ModuleSourceLocal) String() string {
 // which we can retrieve a module package.
 //
 // Note that unlike Terraform, this also includes the address of the
-// ModuleSourceRegistry equivalent. TFLint does not need to distinguish
+// ModuleSourceRegistry equivalent. TofuLint does not need to distinguish
 // between ModuleSourceRemote and ModuleSourceRegistry,
 // so they are all treated as ModuleSourceRemote.
 type ModuleSourceRemote string

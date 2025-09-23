@@ -10,7 +10,7 @@ import (
 
 // Options is an option specified by arguments.
 type Options struct {
-	Version                bool     `short:"v" long:"version" description:"Print TFLint version"`
+	Version                bool     `short:"v" long:"version" description:"Print TofuLint version"`
 	Init                   bool     `long:"init" description:"Install plugins"`
 	Langserver             bool     `long:"langserver" description:"Start language server"`
 	Format                 string   `short:"f" long:"format" description:"Output format" choice:"default" choice:"json" choice:"checkstyle" choice:"junit" choice:"compact" choice:"sarif"`

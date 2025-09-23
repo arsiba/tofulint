@@ -147,7 +147,7 @@ func (s *GRPCServer) EvaluateExpr(expr hcl.Expression, opts sdk.EvaluateExprOpti
 			expr.Range().Start.Line,
 			sdk.ErrSensitive,
 		)
-		log.Printf("[INFO] %s. TFLint ignores expressions with sensitive values.", err)
+		log.Printf("[INFO] %s. TofuLint ignores expressions with sensitive values.", err)
 		return cty.NullVal(cty.NilType), err
 	}
 
@@ -163,7 +163,7 @@ func (s *GRPCServer) EvaluateExpr(expr hcl.Expression, opts sdk.EvaluateExprOpti
 				expr.Range().Start.Line,
 				sdk.ErrUnknownValue,
 			)
-			log.Printf("[INFO] %s. TFLint can only evaluate provided variables and skips dynamic values.", err)
+			log.Printf("[INFO] %s. TofuLint can only evaluate provided variables and skips dynamic values.", err)
 			return false, err
 		}
 
@@ -174,7 +174,7 @@ func (s *GRPCServer) EvaluateExpr(expr hcl.Expression, opts sdk.EvaluateExprOpti
 				expr.Range().Start.Line,
 				sdk.ErrNullValue,
 			)
-			log.Printf("[INFO] %s. TFLint ignores expressions with null values.", err)
+			log.Printf("[INFO] %s. TofuLint ignores expressions with null values.", err)
 			return false, err
 		}
 
