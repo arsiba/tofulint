@@ -34,7 +34,7 @@ signs:
       - --yes
 release:
   github:
-    owner: terraform-linters
-    name: tflint
+    owner: arsiba
+    name: tofulint
 snapshot:
   name_template: "{{ .Tag }}-dev"
