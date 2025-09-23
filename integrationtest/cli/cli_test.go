@@ -8,9 +8,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/fatih/color"
 	"github.com/terraform-linters/tflint/cmd"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func TestIntegration(t *testing.T) {

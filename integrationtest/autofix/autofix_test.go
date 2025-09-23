@@ -12,10 +12,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/arsiba/tofulint/tflint"
 	"github.com/google/go-cmp/cmp"
 	"github.com/terraform-linters/tflint/cmd"
 	"github.com/terraform-linters/tflint/formatter"
-	"github.com/terraform-linters/tflint/tflint"
 )
 
 func TestMain(m *testing.M) {
