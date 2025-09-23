@@ -32,7 +32,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": []
@@ -42,7 +42,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint-errors",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": []
@@ -72,7 +72,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint",
+          "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
             {
               "id": "test_rule",
@@ -114,7 +114,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint-errors",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": []
@@ -144,7 +144,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint",
+          "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
             {
               "id": "test_rule",
@@ -186,7 +186,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint-errors",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": []
@@ -216,7 +216,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint",
+          "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
             {
               "id": "test_rule",
@@ -258,7 +258,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint-errors",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": []
@@ -288,7 +288,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint",
+          "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
             {
               "id": "test_rule",
@@ -330,7 +330,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint-errors",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": []
@@ -359,7 +359,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint",
+          "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
             {
               "id": "test_rule",
@@ -395,7 +395,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint-errors",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": [
@@ -437,7 +437,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": []
@@ -447,7 +447,7 @@ func Test_sarifPrint(t *testing.T) {
         "driver": {
           "name": "tflint-errors",
           "version": "%s",
-          "informationUri": "https://github.com/terraform-linters/tflint"
+          "informationUri": "https://github.com/arsiba/tofulint"
         }
       },
       "results": [

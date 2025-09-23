@@ -9,12 +9,12 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/arsiba/tofulint/formatter"
 	"github.com/arsiba/tofulint/opentofu"
 	"github.com/arsiba/tofulint/tflint"
 	"github.com/fatih/color"
 	"github.com/hashicorp/logutils"
 	flags "github.com/jessevdk/go-flags"
-	"github.com/terraform-linters/tflint/formatter"
 )
 
 // Exit codes are int values that represent an exit code for a particular error.

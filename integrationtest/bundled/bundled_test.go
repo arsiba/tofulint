@@ -10,9 +10,9 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/arsiba/tofulint/formatter"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/terraform-linters/tflint/formatter"
 )
 
 func TestIntegration(t *testing.T) {

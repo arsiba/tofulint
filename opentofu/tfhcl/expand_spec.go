@@ -3,8 +3,8 @@ package tfhcl
 import (
 	"fmt"
 
+	"github.com/arsiba/tofulint/opentofu/tfdiags"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint/terraform/tfdiags"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 	"github.com/zclconf/go-cty/cty/gocty"

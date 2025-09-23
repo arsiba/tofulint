@@ -10,12 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/arsiba/tofulint/langserver"
+	"github.com/arsiba/tofulint/plugin"
 	"github.com/arsiba/tofulint/tflint"
 	"github.com/hashicorp/logutils"
 	lsp "github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
-	"github.com/terraform-linters/tflint/langserver"
-	"github.com/terraform-linters/tflint/plugin"
 )
 
 type jsonrpcMessage struct {

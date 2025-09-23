@@ -17,7 +17,7 @@ func (f *Formatter) sarifPrint(issues tflint.Issues, appErr error) {
 		panic(initErr)
 	}
 
-	run := sarif.NewRun("tflint", "https://github.com/terraform-linters/tflint")
+	run := sarif.NewRun("tflint", "https://github.com/arsiba/tofulint")
 
 	version := tflint.Version.String()
 	run.Tool.Driver.Version = &version
@@ -64,7 +64,7 @@ func (f *Formatter) sarifPrint(issues tflint.Issues, appErr error) {
 		}
 	}
 
-	errRun := sarif.NewRun("tflint-errors", "https://github.com/terraform-linters/tflint")
+	errRun := sarif.NewRun("tflint-errors", "https://github.com/arsiba/tofulint")
 	errRun.Tool.Driver.Version = &version
 
 	report.AddRun(errRun)
