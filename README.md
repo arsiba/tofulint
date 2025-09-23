@@ -1,6 +1,6 @@
 # TofuLint
 [![Build Status](https://github.com/arsiba/tofulint/workflows/build/badge.svg?branch=master)](https://github.com/arsiba/tofulint/actions)
-[![GitHub release](https://img.shields.io/github/release/terraform-linters/tflint.svg)](https://github.com/arsiba/tofulint/releases/latest)
+[![GitHub release](https://img.shields.io/github/release/arsiba/tofulint.svg)](https://github.com/arsiba/tofulint/releases/latest)
 [![Terraform Compatibility](https://img.shields.io/badge/terraform-%3E%3D%201.0-blue)](docs/user-guide/compatibility.md)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arsiba/tofulint)](https://goreportcard.com/report/github.com/arsiba/tofulint)
