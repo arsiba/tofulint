@@ -1,11 +1,7 @@
-// Copyright (c) The OpenTofu Authors
-// SPDX-License-Identifier: MPL-2.0
-// Copyright (c) 2023 HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package opentofu
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -17,13 +13,13 @@ import (
 	"github.com/zclconf/go-cty/cty"
 )
 
-func TestLoadConfig_v0_15_0(t *testing.T) {
+func TestLoadConfig(t *testing.T) {
 	withinFixtureDir(t, "v0.15.0_module", func(dir string) {
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
 		if err != nil {
 			t.Fatal(err)
 		}
-		config, diags := loader.LoadConfig(".", true)
+		config, diags := loader.LoadConfig(".", CallAllModule)
 		if diags.HasErrors() {
 			t.Fatal(diags)
 		}
@@ -81,14 +77,14 @@ func TestLoadConfig_v0_15_0(t *testing.T) {
 	})
 }
 
-func TestLoadConfig_v0_15_0_withBaseDir(t *testing.T) {
+func TestLoadConfig_withBaseDir(t *testing.T) {
 	withinFixtureDir(t, "v0.15.0_module", func(dir string) {
 		// The current dir is test-fixtures/v0.15.0_module, but the base dir is test-fixtures
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, filepath.Dir(dir))
 		if err != nil {
 			t.Fatal(err)
 		}
-		config, diags := loader.LoadConfig(".", true)
+		config, diags := loader.LoadConfig(".", CallAllModule)
 		if diags.HasErrors() {
 			t.Fatal(diags)
 		}
@@ -146,31 +142,97 @@ func TestLoadConfig_v0_15_0_withBaseDir(t *testing.T) {
 	})
 }
 
-func TestLoadConfig_moduleNotFound(t *testing.T) {
-	withinFixtureDir(t, "before_terraform_init", func(dir string) {
+func TestLoadConfig_callLocalModules(t *testing.T) {
+	withinFixtureDir(t, "v0.15.0_module", func(dir string) {
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, diags := loader.LoadConfig(".", true)
-		if !diags.HasErrors() {
-			t.Fatal("Expected error is not occurred")
+		config, diags := loader.LoadConfig(".", CallLocalModule)
+		if diags.HasErrors() {
+			t.Fatal(diags)
 		}
 
-		expected := "module.tf:1,1-22: `ec2_instance` module is not found. Did you run `terraform init`?; "
-		if diags.Error() != expected {
-			t.Fatalf("Expected error is `%s`, but get `%s`", expected, diags)
+		// root
+		if config.Module.SourceDir != "." {
+			t.Fatalf("root module path: want=%s, got=%s", ".", config.Module.SourceDir)
+		}
+		// module.instance
+		testChildModule(t, config, "instance", "ec2")
+
+		if len(config.Children) != 1 {
+			t.Fatalf("Root module has children unexpectedly: %#v", config.Children)
 		}
 	})
 }
 
-func TestLoadConfig_disableModules(t *testing.T) {
-	withinFixtureDir(t, "before_terraform_init", func(dir string) {
+func TestLoadConfig_withoutModuleManifest(t *testing.T) {
+	withinFixtureDir(t, "without_module_manifest", func(dir string) {
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
 		if err != nil {
 			t.Fatal(err)
 		}
-		config, diags := loader.LoadConfig(".", false)
+		_, diags := loader.LoadConfig(".", CallAllModule)
+		if !diags.HasErrors() {
+			t.Fatal("Expected error is not occurred")
+		}
+
+		expected := `module.tf:6,1-16: "consul" module is not found. Did you run "terraform init"?; `
+		if diags.Error() != expected {
+			t.Fatalf(`Expected error is "%s", but got "%s"`, expected, diags)
+		}
+	})
+}
+
+func TestLoadConfig_withoutModuleManifest_callLocalModules(t *testing.T) {
+	withinFixtureDir(t, "without_module_manifest", func(dir string) {
+		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		config, diags := loader.LoadConfig(".", CallLocalModule)
+		if diags.HasErrors() {
+			t.Fatal(diags)
+		}
+
+		// root
+		if config.Module.SourceDir != "." {
+			t.Fatalf("root module path: want=%s, got=%s", ".", config.Module.SourceDir)
+		}
+		// module.instance
+		testChildModule(t, config, "instance", "ec2")
+
+		if len(config.Children) != 1 {
+			t.Fatalf("Root module has children unexpectedly: %#v", config.Children)
+		}
+	})
+}
+
+func TestLoadConfig_moduleNotFound(t *testing.T) {
+	withinFixtureDir(t, "module_not_found", func(dir string) {
+		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, diags := loader.LoadConfig(".", CallLocalModule)
+		if !diags.HasErrors() {
+			t.Fatal("Expected error is not occurred")
+		}
+
+		expected := `module.tf:1,1-22: "ec2_instance" module is not found; The module directory "tf_aws_ec2_instance" does not exist or cannot be read.`
+		if diags.Error() != expected {
+			t.Fatalf(`Expected error is "%s", but got "%s"`, expected, diags)
+		}
+	})
+}
+
+func TestLoadConfig_moduleNotFound_callNoModules(t *testing.T) {
+	withinFixtureDir(t, "module_not_found", func(dir string) {
+		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		config, diags := loader.LoadConfig(".", CallNoModule)
 		if diags.HasErrors() {
 			t.Fatal(diags)
 		}
@@ -184,19 +246,19 @@ func TestLoadConfig_disableModules(t *testing.T) {
 	})
 }
 
-func TestLoadConfig_disableModules_withArgDir(t *testing.T) {
+func TestLoadConfig_moduleNotFound_callNoModules_withArgDir(t *testing.T) {
 	withinFixtureDir(t, ".", func(dir string) {
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
 		if err != nil {
 			t.Fatal(err)
 		}
-		config, diags := loader.LoadConfig("before_terraform_init", false)
+		config, diags := loader.LoadConfig("module_not_found", CallNoModule)
 		if diags.HasErrors() {
 			t.Fatal(diags)
 		}
 
-		if config.Module.SourceDir != "before_terraform_init" {
-			t.Fatalf("Root module path: want=%s, got=%s", "before_terraform_init", config.Module.SourceDir)
+		if config.Module.SourceDir != "module_not_found" {
+			t.Fatalf("Root module path: want=%s, got=%s", "module_not_found", config.Module.SourceDir)
 		}
 		if len(config.Children) != 0 {
 			t.Fatalf("Root module has children unexpectedly: %#v", config.Children)
@@ -210,14 +272,33 @@ func TestLoadConfig_invalidConfiguration(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, diags := loader.LoadConfig(".", false)
+		_, diags := loader.LoadConfig(".", CallNoModule)
 		if !diags.HasErrors() {
 			t.Fatal("Expected error is not occurred")
 		}
 
 		expected := "resource.tf:3,23-29: Missing newline after argument; An argument definition must end with a newline."
 		if diags.Error() != expected {
-			t.Fatalf("Expected error is `%s`, but get `%s`", expected, diags)
+			t.Fatalf(`Expected error is "%s", but got "%s"`, expected, diags)
+		}
+	})
+}
+
+func TestLoadConfig_circularReferencingModules(t *testing.T) {
+	withinFixtureDir(t, "circular_referencing_modules", func(dir string) {
+		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, diags := loader.LoadConfig(".", CallAllModule)
+		if !diags.HasErrors() {
+			t.Fatal("Expected error is not occurred")
+		}
+
+		file := filepath.Join("module2", "main.tf")
+		expected := fmt.Sprintf(`%s:1,1-17: Module stack level too deep; This configuration has nested modules more than 10 levels deep. This is mainly caused by circular references. current path: module.module1.module.module2.module.module1.module.module2.module.module1.module.module2.module.module1.module.module2.module.module1.module.module2`, file)
+		if diags.Error() != expected {
+			t.Fatalf(`Expected error is "%s", but got "%s"`, expected, diags)
 		}
 	})
 }
@@ -428,12 +509,12 @@ func TestLoadValuesFiles_invalidValuesFile(t *testing.T) {
 
 		expected := "terraform.tfvars:3,1-9: Unexpected \"resource\" block; Blocks are not allowed here."
 		if diags.Error() != expected {
-			t.Fatalf("Expected error is `%s`, but get `%s`", expected, diags)
+			t.Fatalf(`Expected error is "%s", but got "%s"`, expected, diags)
 		}
 	})
 }
 
-func TestLoadConfigDirFiles_v0_15_0(t *testing.T) {
+func TestLoadConfigDirFiles_loader(t *testing.T) {
 	withinFixtureDir(t, "v0.15.0_module", func(dir string) {
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
 		if err != nil {
@@ -456,7 +537,7 @@ func TestLoadConfigDirFiles_v0_15_0(t *testing.T) {
 	})
 }
 
-func TestLoadConfigDirFiles_v0_15_0_withBaseDir(t *testing.T) {
+func TestLoadConfigDirFiles_loader_withBaseDir(t *testing.T) {
 	withinFixtureDir(t, "v0.15.0_module", func(dir string) {
 		// The current dir is test-fixtures/v0.15.0_module, but the base dir is test-fixtures
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, filepath.Dir(dir))
@@ -480,7 +561,7 @@ func TestLoadConfigDirFiles_v0_15_0_withBaseDir(t *testing.T) {
 	})
 }
 
-func TestLoadConfigDirFiles_v0_15_0_withArgDir(t *testing.T) {
+func TestLoadConfigDirFiles_loader_withArgDir(t *testing.T) {
 	withinFixtureDir(t, ".", func(dir string) {
 		loader, err := NewLoader(afero.Afero{Fs: afero.NewOsFs()}, dir)
 		if err != nil {
@@ -510,17 +591,10 @@ func withinFixtureDir(t *testing.T, dir string, test func(string)) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer func() {
-		if err = os.Chdir(currentDir); err != nil {
-			t.Fatal(err)
-		}
-	}()
 
 	workingDir := filepath.Join(currentDir, "test-fixtures", dir)
-	if err = os.Chdir(workingDir); err != nil {
-		t.Fatal(err)
-	}
 
+	t.Chdir(workingDir)
 	test(workingDir)
 }
 
@@ -528,7 +602,7 @@ func testChildModule(t *testing.T, config *Config, key string, wantPath string) 
 	t.Helper()
 
 	if _, exists := config.Children[key]; !exists {
-		t.Fatalf("`%s` module is not loaded: %#v", key, config.Children)
+		t.Fatalf("`%s` module is not loaded, are submodules downloaded?: %#v", key, config.Children)
 	}
 	modulePath := config.Children[key].Module.SourceDir
 	if modulePath != wantPath {
