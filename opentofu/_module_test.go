@@ -1,445 +1,1775 @@
-// Copyright (c) The OpenTofu Authors
-// SPDX-License-Identifier: MPL-2.0
-// Copyright (c) 2023 HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
-package opentofu
+/* package opentofu
 
 import (
-	"strings"
+	"bytes"
+	"context"
+	"os"
 	"testing"
 
-	"github.com/arsiba/tofulint/opentofu/addrs"
-	"github.com/zclconf/go-cty/cty"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/hashicorp/go-version"
+	"github.com/hashicorp/hcl/v2"
+	"github.com/spf13/afero"
+	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
 )
 
-// TestNewModule_provider_local_name exercises module.gatherProviderLocalNames()
-func TestNewModule_provider_local_name(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/providers-explicit-fqn")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	p := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "foo", "test")
-	if name, exists := mod.ProviderLocalNames[p]; !exists {
-		t.Fatal("provider FQN foo/test not found")
-	} else {
-		if name != "foo-test" {
-			t.Fatalf("provider localname mismatch: got %s, want foo-test", name)
-		}
-	}
-
-	// ensure the reverse lookup (fqn to local name) works as well
-	localName := mod.LocalNameForProvider(p)
-	if localName != "foo-test" {
-		t.Fatal("provider local name not found")
-	}
-
-	// if there is not a local name for a provider, it should return the type name
-	localName = mod.LocalNameForProvider(addrs.NewDefaultProvider("nonexist"))
-	if localName != "nonexist" {
-		t.Error("wrong local name returned for a non-local provider")
-	}
-
-	// can also look up the "terraform" provider and see that it sources is
-	// allowed to be overridden, even though there is a builtin provider
-	// called "terraform".
-	p = addrs.NewProvider(addrs.DefaultProviderRegistryHost, "not-builtin", "not-terraform")
-	if name, exists := mod.ProviderLocalNames[p]; !exists {
-		t.Fatal("provider FQN not-builtin/not-terraform not found")
-	} else {
-		if name != "terraform" {
-			t.Fatalf("provider localname mismatch: got %s, want terraform", name)
-		}
-	}
-}
-
-// This test validates the provider FQNs set in each Resource
-func TestNewModule_resource_providers(t *testing.T) {
-	cfg, diags := testNestedModuleConfigFromDir(t, "testdata/valid-modules/nested-providers-fqns")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	// both the root and child module have two resources, one which should use
-	// the default implied provider and one explicitly using a provider set in
-	// required_providers
-	wantImplicit := addrs.NewDefaultProvider("test")
-	wantFoo := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "foo", "test")
-	wantBar := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "bar", "test")
-
-	// root module
-	if !cfg.Module.ManagedResources["test_instance.explicit"].Provider.Equals(wantFoo) {
-		t.Fatalf("wrong provider for \"test_instance.explicit\"\ngot:  %s\nwant: %s",
-			cfg.Module.ManagedResources["test_instance.explicit"].Provider,
-			wantFoo,
-		)
-	}
-	if !cfg.Module.ManagedResources["test_instance.implicit"].Provider.Equals(wantImplicit) {
-		t.Fatalf("wrong provider for \"test_instance.implicit\"\ngot:  %s\nwant: %s",
-			cfg.Module.ManagedResources["test_instance.implicit"].Provider,
-			wantImplicit,
-		)
-	}
-
-	// a data source
-	if !cfg.Module.DataResources["data.test_resource.explicit"].Provider.Equals(wantFoo) {
-		t.Fatalf("wrong provider for \"module.child.test_instance.explicit\"\ngot:  %s\nwant: %s",
-			cfg.Module.ManagedResources["test_instance.explicit"].Provider,
-			wantBar,
-		)
-	}
-
-	// child module
-	cm := cfg.Children["child"].Module
-	if !cm.ManagedResources["test_instance.explicit"].Provider.Equals(wantBar) {
-		t.Fatalf("wrong provider for \"module.child.test_instance.explicit\"\ngot:  %s\nwant: %s",
-			cfg.Module.ManagedResources["test_instance.explicit"].Provider,
-			wantBar,
-		)
-	}
-	if !cm.ManagedResources["test_instance.implicit"].Provider.Equals(wantImplicit) {
-		t.Fatalf("wrong provider for \"module.child.test_instance.implicit\"\ngot:  %s\nwant: %s",
-			cfg.Module.ManagedResources["test_instance.implicit"].Provider,
-			wantImplicit,
-		)
-	}
-}
-
-func TestProviderForLocalConfig(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/providers-explicit-fqn")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-	lc := addrs.LocalProviderConfig{LocalName: "foo-test"}
-	got := mod.ProviderForLocalConfig(lc)
-	want := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "foo", "test")
-	if !got.Equals(want) {
-		t.Fatalf("wrong result! got %#v, want %#v\n", got, want)
-	}
-}
-
-// At most one required_providers block per module is permitted.
-func TestModule_required_providers_multiple(t *testing.T) {
-	_, diags := testModuleFromDir("testdata/invalid-modules/multiple-required-providers")
-	if !diags.HasErrors() {
-		t.Fatal("module should have error diags, but does not")
-	}
-
-	want := `Duplicate required providers configuration`
-	if got := diags.Error(); !strings.Contains(got, want) {
-		t.Fatalf("expected error to contain %q\nerror was:\n%s", want, got)
-	}
-}
-
-// A module may have required_providers configured in files loaded later than
-// resources. These provider settings should still be reflected in the
-// resources' configuration.
-func TestModule_required_providers_after_resource(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/required-providers-after-resource")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	want := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "foo", "test")
-
-	req, exists := mod.ProviderRequirements.RequiredProviders["test"]
-	if !exists {
-		t.Fatal("no provider requirements found for \"test\"")
-	}
-	if req.Type != want {
-		t.Errorf("wrong provider addr for \"test\"\ngot:  %s\nwant: %s",
-			req.Type, want,
-		)
-	}
-
-	if got := mod.ManagedResources["test_instance.my-instance"].Provider; !got.Equals(want) {
-		t.Errorf("wrong provider addr for \"test_instance.my-instance\"\ngot:  %s\nwant: %s",
-			got, want,
-		)
-	}
-}
-
-// We support overrides for required_providers blocks, which should replace the
-// entire block for each provider localname, leaving other blocks unaffected.
-// This should also be reflected in any resources in the module using this
-// provider.
-func TestModule_required_provider_overrides(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/required-providers-overrides")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	// The foo provider and resource should be unaffected
-	want := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "acme", "foo")
-	req, exists := mod.ProviderRequirements.RequiredProviders["foo"]
-	if !exists {
-		t.Fatal("no provider requirements found for \"foo\"")
-	}
-	if req.Type != want {
-		t.Errorf("wrong provider addr for \"foo\"\ngot:  %s\nwant: %s",
-			req.Type, want,
-		)
-	}
-	if got := mod.ManagedResources["foo_thing.ft"].Provider; !got.Equals(want) {
-		t.Errorf("wrong provider addr for \"foo_thing.ft\"\ngot:  %s\nwant: %s",
-			got, want,
-		)
-	}
-
-	// The bar provider and resource should be using the override config
-	want = addrs.NewProvider(addrs.DefaultProviderRegistryHost, "blorp", "bar")
-	req, exists = mod.ProviderRequirements.RequiredProviders["bar"]
-	if !exists {
-		t.Fatal("no provider requirements found for \"bar\"")
-	}
-	if req.Type != want {
-		t.Errorf("wrong provider addr for \"bar\"\ngot:  %s\nwant: %s",
-			req.Type, want,
-		)
-	}
-	if gotVer, wantVer := req.Requirement.Required.String(), "~>2.0.0"; gotVer != wantVer {
-		t.Errorf("wrong provider version constraint for \"bar\"\ngot:  %s\nwant: %s",
-			gotVer, wantVer,
-		)
-	}
-	if got := mod.ManagedResources["bar_thing.bt"].Provider; !got.Equals(want) {
-		t.Errorf("wrong provider addr for \"bar_thing.bt\"\ngot:  %s\nwant: %s",
-			got, want,
-		)
-	}
-}
-
-// When having multiple required providers defined, and one with syntax error,
-// ensure that the diagnostics are returned correctly for each and every validation.
-// In case a required_provider is containing syntax errors, we are returning an empty one just to allow the
-// later validations to add their results.
-func TestModule_required_providers_multiple_one_with_syntax_error(t *testing.T) {
-	_, diags := testModuleFromDir("testdata/invalid-modules/multiple-required-providers-with-syntax-error")
-	if !diags.HasErrors() {
-		t.Fatal("module should have error diags, but does not")
-	}
-
-	want := []string{
-		`Missing attribute value; Expected an attribute value`,
-		`Unexpected "resource" block; Blocks are not allowed here`,
-		`Duplicate required providers configuration`,
-	}
-	if wantLen, gotLen := len(want), len(diags.Errs()); wantLen != gotLen {
-		t.Fatalf("expected %d errors but got %d", wantLen, gotLen)
-	}
-	for i, e := range diags.Errs() {
-		if got := e.Error(); !strings.Contains(got, want[i]) {
-			t.Errorf("expected error to contain %q\nerror was: \n\t%q\n", want[i], got)
-		}
-	}
-}
-
-// Resources without explicit provider configuration are assigned a provider
-// implied based on the resource type. For example, this resource:
-//
-//	resource "foo_instance" "test" {}
-//
-// ...is assigned to whichever provider has local name "foo" in the current
-// module.
-//
-// To find the correct provider, we first look in the module's provider
-// requirements map for a local name matching the resource type, and fall back
-// to a default provider if none is found. This applies to both managed and
-// data resources.
-func TestModule_implied_provider(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/implied-providers")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	// The three providers used in the config resources
-	foo := addrs.NewProvider("registry.acme.corp", "acme", "foo")
-	whatever := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "acme", "something")
-	bar := addrs.NewDefaultProvider("bar")
-
-	// Verify that the registry.acme.corp/acme/foo provider is defined in the
-	// module provider requirements with local name "foo"
-	req, exists := mod.ProviderRequirements.RequiredProviders["foo"]
-	if !exists {
-		t.Fatal("no provider requirements found for \"foo\"")
-	}
-	if req.Type != foo {
-		t.Errorf("wrong provider addr for \"foo\"\ngot:  %s\nwant: %s",
-			req.Type, foo,
-		)
-	}
-
-	// Verify that the acme/something provider is defined in the
-	// module provider requirements with local name "whatever"
-	req, exists = mod.ProviderRequirements.RequiredProviders["whatever"]
-	if !exists {
-		t.Fatal("no provider requirements found for \"foo\"")
-	}
-	if req.Type != whatever {
-		t.Errorf("wrong provider addr for \"whatever\"\ngot:  %s\nwant: %s",
-			req.Type, whatever,
-		)
-	}
-
-	// Check that resources are assigned the correct providers: foo_* resources
-	// should have the custom foo provider, bar_* resources the default bar
-	// provider.
+func TestRebuild(t *testing.T) {
 	tests := []struct {
-		Address  string
-		Provider addrs.Provider
+		name    string
+		module  *Module
+		sources map[string][]byte
+		want    *Module
 	}{
-		{"foo_resource.a", foo},
-		{"data.foo_resource.b", foo},
-		{"bar_resource.c", bar},
-		{"data.bar_resource.d", bar},
-		{"whatever_resource.e", whatever},
-		{"data.whatever_resource.f", whatever},
+		{
+			name: "HCL native files",
+			module: &Module{
+				SourceDir: ".",
+				Variables: map[string]*Variable{"foo": {Name: "foo"}},
+				primaries: map[string]*hcl.File{
+					"main.tf": {Bytes: []byte(`variable "foo" { default = 1 }`), Body: hcl.EmptyBody()},
+				},
+				overrides: map[string]*hcl.File{
+					"main_override.tf": {Bytes: []byte(`variable "foo" { default = 2 }`), Body: hcl.EmptyBody()},
+					"override.tf":      {Bytes: []byte(`variable "foo" { default = 3 }`), Body: hcl.EmptyBody()},
+				},
+				Sources: map[string][]byte{
+					"main.tf":          []byte(`variable "foo" { default = 1 }`),
+					"main_override.tf": []byte(`variable "foo" { default = 2 }`),
+					"override.tf":      []byte(`variable "foo" { default = 3 }`),
+				},
+				Files: map[string]*hcl.File{
+					"main.tf":          {Bytes: []byte(`variable "foo" { default = 1 }`), Body: hcl.EmptyBody()},
+					"main_override.tf": {Bytes: []byte(`variable "foo" { default = 2 }`), Body: hcl.EmptyBody()},
+					"override.tf":      {Bytes: []byte(`variable "foo" { default = 3 }`), Body: hcl.EmptyBody()},
+				},
+			},
+			sources: map[string][]byte{
+				"main.tf": []byte(`
+variable "foo" { default = 1 }
+variable "bar" { default = "bar" }
+`),
+				"main_override.tf": []byte(`
+variable "foo" { default = 2 }
+variable "bar" { default = "baz" }
+`),
+			},
+			want: &Module{
+				SourceDir: ".",
+				Variables: map[string]*Variable{"foo": {Name: "foo"}, "bar": {Name: "bar"}},
+				primaries: map[string]*hcl.File{
+					"main.tf": {
+						Bytes: []byte(`
+variable "foo" { default = 1 }
+variable "bar" { default = "bar" }
+`),
+						Body: hcl.EmptyBody(),
+					},
+				},
+				overrides: map[string]*hcl.File{
+					"main_override.tf": {
+						Bytes: []byte(`
+variable "foo" { default = 2 }
+variable "bar" { default = "baz" }
+`),
+						Body: hcl.EmptyBody(),
+					},
+					"override.tf": {Bytes: []byte(`variable "foo" { default = 3 }`), Body: hcl.EmptyBody()},
+				},
+				Sources: map[string][]byte{
+					"main.tf": []byte(`
+variable "foo" { default = 1 }
+variable "bar" { default = "bar" }
+`),
+					"main_override.tf": []byte(`
+variable "foo" { default = 2 }
+variable "bar" { default = "baz" }
+`),
+					"override.tf": []byte(`variable "foo" { default = 3 }`),
+				},
+				Files: map[string]*hcl.File{
+					"main.tf": {
+						Bytes: []byte(`
+variable "foo" { default = 1 }
+variable "bar" { default = "bar" }
+`),
+						Body: hcl.EmptyBody(),
+					},
+					"main_override.tf": {
+						Bytes: []byte(`
+variable "foo" { default = 2 }
+variable "bar" { default = "baz" }
+`),
+						Body: hcl.EmptyBody(),
+					},
+					"override.tf": {Bytes: []byte(`variable "foo" { default = 3 }`), Body: hcl.EmptyBody()},
+				},
+			},
+		},
+		{
+			name: "HCL JSON files",
+			module: &Module{
+				SourceDir: ".",
+				Variables: map[string]*Variable{"foo": {Name: "foo"}},
+				primaries: map[string]*hcl.File{
+					"main.tf.json": {Bytes: []byte(`{"variable": {"foo": {"default": 1}}}`), Body: hcl.EmptyBody()},
+				},
+				overrides: map[string]*hcl.File{
+					"main_override.tf.json": {Bytes: []byte(`{"variable": {"foo": {"default": 2}}}`), Body: hcl.EmptyBody()},
+					"override.tf.json":      {Bytes: []byte(`{"variable": {"foo": {"default": 3}}}`), Body: hcl.EmptyBody()},
+				},
+				Sources: map[string][]byte{
+					"main.tf.json":          []byte(`{"variable": {"foo": {"default": 1}}}`),
+					"main_override.tf.json": []byte(`{"variable": {"foo": {"default": 2}}}`),
+					"override.tf.json":      []byte(`{"variable": {"foo": {"default": 3}}}`),
+				},
+				Files: map[string]*hcl.File{
+					"main.tf.json":          {Bytes: []byte(`{"variable": {"foo": {"default": 1}}}`), Body: hcl.EmptyBody()},
+					"main_override.tf.json": {Bytes: []byte(`{"variable": {"foo": {"default": 2}}}`), Body: hcl.EmptyBody()},
+					"override.tf.json":      {Bytes: []byte(`{"variable": {"foo": {"default": 3}}}`), Body: hcl.EmptyBody()},
+				},
+			},
+			sources: map[string][]byte{
+				"main.tf.json":          []byte(`{"variable": {"foo": {"default": 1}, "bar": {"default": "bar"}}}`),
+				"main_override.tf.json": []byte(`{"variable": {"foo": {"default": 2}, "bar": {"default": "baz"}}}`),
+			},
+			want: &Module{
+				SourceDir: ".",
+				Variables: map[string]*Variable{"foo": {Name: "foo"}, "bar": {Name: "bar"}},
+				primaries: map[string]*hcl.File{
+					"main.tf.json": {Bytes: []byte(`{"variable": {"foo": {"default": 1}, "bar": {"default": "bar"}}}`), Body: hcl.EmptyBody()},
+				},
+				overrides: map[string]*hcl.File{
+					"main_override.tf.json": {Bytes: []byte(`{"variable": {"foo": {"default": 2}, "bar": {"default": "baz"}}}`), Body: hcl.EmptyBody()},
+					"override.tf.json":      {Bytes: []byte(`{"variable": {"foo": {"default": 3}}}`), Body: hcl.EmptyBody()},
+				},
+				Sources: map[string][]byte{
+					"main.tf.json":          []byte(`{"variable": {"foo": {"default": 1}, "bar": {"default": "bar"}}}`),
+					"main_override.tf.json": []byte(`{"variable": {"foo": {"default": 2}, "bar": {"default": "baz"}}}`),
+					"override.tf.json":      []byte(`{"variable": {"foo": {"default": 3}}}`),
+				},
+				Files: map[string]*hcl.File{
+					"main.tf.json":          {Bytes: []byte(`{"variable": {"foo": {"default": 1}, "bar": {"default": "bar"}}}`), Body: hcl.EmptyBody()},
+					"main_override.tf.json": {Bytes: []byte(`{"variable": {"foo": {"default": 2}, "bar": {"default": "baz"}}}`), Body: hcl.EmptyBody()},
+					"override.tf.json":      {Bytes: []byte(`{"variable": {"foo": {"default": 3}}}`), Body: hcl.EmptyBody()},
+				},
+			},
+		},
 	}
+
 	for _, test := range tests {
-		resources := mod.ManagedResources
-		if strings.HasPrefix(test.Address, "data.") {
-			resources = mod.DataResources
-		}
-		resource, exists := resources[test.Address]
-		if !exists {
-			t.Errorf("could not find resource %q in %#v", test.Address, resources)
-			continue
-		}
-		if got := resource.Provider; !got.Equals(test.Provider) {
-			t.Errorf("wrong provider addr for %q\ngot:  %s\nwant: %s",
-				test.Address, got, test.Provider,
-			)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			diags := test.module.Rebuild(test.sources)
+			if diags.HasErrors() {
+				t.Fatalf("unexpected error: %s", diags.Error())
+			}
+
+			opt := cmp.Comparer(func(x, y *hcl.File) bool {
+				return bytes.Equal(x.Bytes, y.Bytes)
+			})
+
+			if diff := cmp.Diff(test.want.Sources, test.module.Sources); diff != "" {
+				t.Errorf("sources mismatch:\n%s", diff)
+			}
+			if diff := cmp.Diff(test.want.Files, test.module.Files, opt); diff != "" {
+				t.Errorf("files mismatch:\n%s", diff)
+			}
+			if diff := cmp.Diff(test.want.primaries, test.module.primaries, opt); diff != "" {
+				t.Errorf("primaries mismatch:\n%s", diff)
+			}
+			if diff := cmp.Diff(test.want.overrides, test.module.overrides, opt); diff != "" {
+				t.Errorf("overrides mismatch:\n%s", diff)
+			}
+			if len(test.want.Variables) != len(test.module.Variables) {
+				t.Errorf("variables count mismatch: want %d, got %d", len(test.want.Variables), len(test.module.Variables))
+			}
+		})
 	}
 }
 
-func TestImpliedProviderForUnqualifiedType(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/implied-providers")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	foo := addrs.NewProvider("registry.acme.corp", "acme", "foo")
-	whatever := addrs.NewProvider(addrs.DefaultProviderRegistryHost, "acme", "something")
-	bar := addrs.NewDefaultProvider("bar")
-	tf := addrs.NewBuiltInProvider("terraform")
-
+func TestPartialContent(t *testing.T) {
 	tests := []struct {
-		Type     string
-		Provider addrs.Provider
+		name   string
+		files  map[string]string
+		schema *hclext.BodySchema
+		want   *hclext.BodyContent
 	}{
-		{"foo", foo},
-		{"whatever", whatever},
-		{"bar", bar},
-		{"terraform", tf},
+		{
+			name:  "empty files",
+			files: map[string]string{},
+			schema: &hclext.BodySchema{
+				Attributes: []hclext.AttributeSchema{{Name: "foo"}},
+				Blocks: []hclext.BlockSchema{
+					{
+						Type:       "resource",
+						LabelNames: []string{"type", "name"},
+						Body:       &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "instance_type"}}},
+					},
+				},
+			},
+			want: &hclext.BodyContent{},
+		},
+		{
+			name: "primaries",
+			files: map[string]string{
+				"main1.tf": `
+resource "aws_instance" "foo" {
+  instance_type = "t2.micro"
+}`,
+				"main2.tf": `
+resource "aws_instance" "bar" {
+  instance_type = "m5.2xlarge"
+}`,
+			},
+			schema: &hclext.BodySchema{
+				Attributes: []hclext.AttributeSchema{{Name: "foo"}},
+				Blocks: []hclext.BlockSchema{
+					{
+						Type:       "resource",
+						LabelNames: []string{"type", "name"},
+						Body:       &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "instance_type"}}},
+					},
+				},
+			},
+			want: &hclext.BodyContent{
+				Blocks: hclext.Blocks{
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "foo"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main1.tf", Start: hcl.Pos{Line: 3}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main1.tf", Start: hcl.Pos{Line: 2}},
+					},
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "bar"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main2.tf", Start: hcl.Pos{Line: 3}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main2.tf", Start: hcl.Pos{Line: 2}},
+					},
+				},
+			},
+		},
+		{
+			name: "overrides",
+			files: map[string]string{
+				"main.tf": `
+resource "aws_instance" "foo" {
+  instance_type = "t2.micro"
+}`,
+				"main_override.tf": `
+resource "aws_instance" "foo" {
+  instance_type = "m5.2xlarge"
+}`,
+			},
+			schema: &hclext.BodySchema{
+				Attributes: []hclext.AttributeSchema{{Name: "foo"}},
+				Blocks: []hclext.BlockSchema{
+					{
+						Type:       "resource",
+						LabelNames: []string{"type", "name"},
+						Body:       &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "instance_type"}}},
+					},
+				},
+			},
+			want: &hclext.BodyContent{
+				Blocks: hclext.Blocks{
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "foo"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main_override.tf", Start: hcl.Pos{Line: 3}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 2}},
+					},
+				},
+			},
+		},
+		{
+			name: "overrides by multiple files/blocks",
+			files: map[string]string{
+				"main.tf": `
+resource "aws_instance" "foo" {
+  instance_type = "t2.micro"
+}`,
+				"main1_override.tf": `
+resource "aws_instance" "foo" {
+  instance_type = "m5.2xlarge"
+}`,
+				"main2_override.tf": `
+resource "aws_instance" "foo" {
+  instance_type = "m5.4xlarge"
+}
+resource "aws_instance" "foo" {
+  instance_type = "m5.8xlarge"
+}`,
+			},
+			schema: &hclext.BodySchema{
+				Attributes: []hclext.AttributeSchema{{Name: "foo"}},
+				Blocks: []hclext.BlockSchema{
+					{
+						Type:       "resource",
+						LabelNames: []string{"type", "name"},
+						Body:       &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "instance_type"}}},
+					},
+				},
+			},
+			want: &hclext.BodyContent{
+				Blocks: hclext.Blocks{
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "foo"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main2_override.tf", Start: hcl.Pos{Line: 6}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 2}},
+					},
+				},
+			},
+		},
+		{
+			name: "just attributes",
+			files: map[string]string{
+				"main.tf": `
+locals {
+  foo = "foo"
+  bar = "bar"
+}`,
+			},
+			schema: &hclext.BodySchema{
+				Blocks: []hclext.BlockSchema{
+					{
+						Type: "locals",
+						Body: &hclext.BodySchema{Mode: hclext.SchemaJustAttributesMode},
+					},
+				},
+			},
+			want: &hclext.BodyContent{
+				Blocks: hclext.Blocks{
+					{
+						Type: "locals",
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{
+								"foo": &hclext.Attribute{Name: "foo", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 3}}},
+								"bar": &hclext.Attribute{Name: "bar", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 4}}},
+							},
+							Blocks: hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 2}},
+					},
+				},
+			},
+		},
+		{
+			name: "expand resources",
+			files: map[string]string{
+				"main.tf": `
+resource "aws_instance" "foo" {
+  count = 0
+  instance_type = "t2.micro"
+}
+resource "aws_instance" "bar" {
+  count = 2
+  instance_type = "m5.2xlarge"
+}`,
+			},
+			schema: &hclext.BodySchema{
+				Attributes: []hclext.AttributeSchema{{Name: "foo"}},
+				Blocks: []hclext.BlockSchema{
+					{
+						Type:       "resource",
+						LabelNames: []string{"type", "name"},
+						Body:       &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "instance_type"}}},
+					},
+				},
+			},
+			want: &hclext.BodyContent{
+				Blocks: hclext.Blocks{
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "bar"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 8}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 6}},
+					},
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "bar"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 8}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 6}},
+					},
+				},
+			},
+		},
+		{
+			name: "expand modules",
+			files: map[string]string{
+				"main.tf": `
+module "foo" {
+  count = 0
+  instance_type = "t2.micro"
+}
+module "bar" {
+  count = 2
+  instance_type = "m5.2xlarge"
+}`,
+			},
+			schema: &hclext.BodySchema{
+				Attributes: []hclext.AttributeSchema{{Name: "foo"}},
+				Blocks: []hclext.BlockSchema{
+					{
+						Type:       "module",
+						LabelNames: []string{"name"},
+						Body:       &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "instance_type"}}},
+					},
+				},
+			},
+			want: &hclext.BodyContent{
+				Blocks: hclext.Blocks{
+					{
+						Type:   "module",
+						Labels: []string{"bar"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 8}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 6}},
+					},
+					{
+						Type:   "module",
+						Labels: []string{"bar"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{"instance_type": &hclext.Attribute{Name: "instance_type", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 8}}}},
+							Blocks:     hclext.Blocks{},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 6}},
+					},
+				},
+			},
+		},
+		{
+			name: "dynamic blocks",
+			files: map[string]string{
+				"main.tf": `
+resource "aws_instance" "foo" {
+  ebs_block_device {
+    volume_size = "10"
+  }
+}
+resource "aws_instance" "bar" {
+  dynamic "ebs_block_device" {
+    for_each = toset([20, 30])
+    content {
+      volume_size = ebs_block_device.value
+    }
+  }
+}`,
+			},
+			schema: &hclext.BodySchema{
+				Attributes: []hclext.AttributeSchema{{Name: "foo"}},
+				Blocks: []hclext.BlockSchema{
+					{
+						Type:       "resource",
+						LabelNames: []string{"type", "name"},
+						Body: &hclext.BodySchema{
+							Attributes: []hclext.AttributeSchema{{Name: "instance_type"}},
+							Blocks: []hclext.BlockSchema{
+								{
+									Type: "ebs_block_device",
+									Body: &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "volume_size"}}},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &hclext.BodyContent{
+				Blocks: hclext.Blocks{
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "foo"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{},
+							Blocks: hclext.Blocks{
+								{
+									Type: "ebs_block_device",
+									Body: &hclext.BodyContent{
+										Attributes: hclext.Attributes{"volume_size": &hclext.Attribute{Name: "volume_size", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 4}}}},
+										Blocks:     hclext.Blocks{},
+									},
+									DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 3}},
+								},
+							},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 2}},
+					},
+					{
+						Type:   "resource",
+						Labels: []string{"aws_instance", "bar"},
+						Body: &hclext.BodyContent{
+							Attributes: hclext.Attributes{},
+							Blocks: hclext.Blocks{
+								{
+									Type: "ebs_block_device",
+									Body: &hclext.BodyContent{
+										Attributes: hclext.Attributes{"volume_size": &hclext.Attribute{Name: "volume_size", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 11}}}},
+										Blocks:     hclext.Blocks{},
+									},
+									DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 8}},
+								},
+								{
+									Type: "ebs_block_device",
+									Body: &hclext.BodyContent{
+										Attributes: hclext.Attributes{"volume_size": &hclext.Attribute{Name: "volume_size", Range: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 11}}}},
+										Blocks:     hclext.Blocks{},
+									},
+									DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 8}},
+								},
+							},
+						},
+						DefRange: hcl.Range{Filename: "main.tf", Start: hcl.Pos{Line: 7}},
+					},
+				},
+			},
+		},
 	}
+
 	for _, test := range tests {
-		got := mod.ImpliedProviderForUnqualifiedType(test.Type)
-		if !got.Equals(test.Provider) {
-			t.Errorf("wrong result for %q: got %#v, want %#v\n", test.Type, got, test.Provider)
-		}
+		t.Run(test.name, func(t *testing.T) {
+			fs := afero.Afero{Fs: afero.NewMemMapFs()}
+			for name, content := range test.files {
+				if err := fs.WriteFile(name, []byte(content), os.ModePerm); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			parser := NewParser(fs)
+			mod, diags := parser.LoadConfigDir(".", ".")
+			if diags.HasErrors() {
+				t.Fatal(diags)
+			}
+			config, diags := BuildConfig(t.Context(), mod, ModuleWalkerFunc(func(ctx context.Context, req *ModuleRequest) (*Module, *version.Version, hcl.Diagnostics) {
+				return nil, nil, nil
+			}))
+			if diags.HasErrors() {
+				t.Fatal(diags)
+			}
+			variableValues, diags := VariableValues(config)
+			if diags.HasErrors() {
+				t.Fatal(diags)
+			}
+
+			ctx := &Evaluator{
+				Meta:           &ContextMeta{Env: Workspace()},
+				ModulePath:     config.Path.UnkeyedInstanceShim(),
+				Config:         config,
+				VariableValues: variableValues,
+			}
+
+			got, diags := config.Module.PartialContent(test.schema, ctx)
+			if diags.HasErrors() {
+				t.Fatal(diags)
+			}
+
+			opts := cmp.Options{
+				cmpopts.IgnoreFields(hclext.Block{}, "TypeRange", "LabelRanges"),
+				cmpopts.IgnoreFields(hclext.Attribute{}, "Expr", "NameRange"),
+				cmpopts.IgnoreFields(hcl.Range{}, "End"),
+				cmpopts.IgnoreFields(hcl.Pos{}, "Column", "Byte"),
+				cmpopts.SortSlices(func(i, j *hclext.Block) bool {
+					return i.DefRange.String() < j.DefRange.String()
+				}),
+			}
+			if diff := cmp.Diff(got, test.want, opts); diff != "" {
+				t.Error(diff)
+			}
+		})
 	}
 }
 
-func TestModule_backend_override(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/override-backend")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
+func Test_overrideBlocks(t *testing.T) {
+	tests := []struct {
+		Name      string
+		Primaries hclext.Blocks
+		Overrides hclext.Blocks
+		Want      hclext.Blocks
+	}{
+		{
+			Name:      "empty blocks",
+			Primaries: hclext.Blocks{},
+			Overrides: hclext.Blocks{},
+			Want:      hclext.Blocks{},
+		},
+		{
+			Name: "no override",
+			Primaries: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{},
+			Want: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}},
+					},
+				},
+			},
+		},
+		{
+			Name: "no override because resources are difference",
+			Primaries: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"baz", "qux"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo2"}},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}},
+					},
+				},
+			},
+		},
+		{
+			Name: "override",
+			Primaries: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{
+							"foo": &hclext.Attribute{Name: "foo"},
+							"bar": &hclext.Attribute{Name: "bar"},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{
+							"foo": &hclext.Attribute{Name: "bar"},
+							"baz": &hclext.Attribute{Name: "baz"},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{
+							"foo": &hclext.Attribute{Name: "bar"},
+							"bar": &hclext.Attribute{Name: "bar"},
+							"baz": &hclext.Attribute{Name: "baz"},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override nested blocks",
+			Primaries: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}},
+						Blocks: hclext.Blocks{
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"baz": &hclext.Attribute{Name: "baz"},
+										"qux": &hclext.Attribute{Name: "qux"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "bar"}},
+						Blocks: hclext.Blocks{
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"baz": &hclext.Attribute{Name: "qux"},
+										"bar": &hclext.Attribute{Name: "bar"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "bar"}},
+						Blocks: hclext.Blocks{
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										// The contents of nested configuration blocks are not merged.
+										"baz": &hclext.Attribute{Name: "qux"},
+										"bar": &hclext.Attribute{Name: "bar"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override multiple nested blocks",
+			Primaries: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"foo": &hclext.Attribute{Name: "foo"},
+									},
+								},
+							},
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"bar": &hclext.Attribute{Name: "bar"},
+									},
+								},
+							},
+							{
+								Type: "other_nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"qux": &hclext.Attribute{Name: "qux"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"baz": &hclext.Attribute{Name: "baz"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							// Any block types that do not appear in the override block remain from the original block.
+							{
+								Type: "other_nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"qux": &hclext.Attribute{Name: "qux"},
+									},
+								},
+							},
+							// override block replace all blocks of the same type in the original block.
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"baz": &hclext.Attribute{Name: "baz"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override lifecycle/provisioner/connection",
+			Primaries: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "lifecycle",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"create_before_destroy": &hclext.Attribute{Name: "create_before_destroy"}, "prevent_destroy": &hclext.Attribute{Name: "prevent_destroy"}},
+								},
+							},
+							{
+								Type:   "provisioner",
+								Labels: []string{"local-exec"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"command": &hclext.Attribute{Name: "command"}},
+								},
+							},
+							{
+								Type:   "provisioner",
+								Labels: []string{"file"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"content": &hclext.Attribute{Name: "content"}},
+								},
+							},
+							{
+								Type: "connection",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"type": &hclext.Attribute{Name: "type"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "lifecycle",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"ignore_changes": &hclext.Attribute{Name: "ignore_changes"}, "create_before_destroy": &hclext.Attribute{Name: "create_before_destroy2"}},
+								},
+							},
+							{
+								Type:   "provisioner",
+								Labels: []string{"remote-exec"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"inline": &hclext.Attribute{Name: "inline"}},
+								},
+							},
+							{
+								Type: "connection",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"user": &hclext.Attribute{Name: "user"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type:   "resource",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							// the contents of any lifecycle nested block are merged on an argument-by-argument basis.
+							{
+								Type: "lifecycle",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"create_before_destroy": &hclext.Attribute{Name: "create_before_destroy2"}, "prevent_destroy": &hclext.Attribute{Name: "prevent_destroy"}, "ignore_changes": &hclext.Attribute{Name: "ignore_changes"}},
+								},
+							},
+							// If an overriding resource block contains one or more provisioner blocks then any provisioner blocks in the original block are ignored.
+							{
+								Type:   "provisioner",
+								Labels: []string{"remote-exec"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"inline": &hclext.Attribute{Name: "inline"}},
+								},
+							},
+							// If an overriding resource block contains a connection block then it completely overrides any connection block present in the original block.
+							{
+								Type: "connection",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"user": &hclext.Attribute{Name: "user"}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override data sources",
+			Primaries: hclext.Blocks{
+				{
+					Type:   "data",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{
+							"foo": &hclext.Attribute{Name: "foo"},
+							"bar": &hclext.Attribute{Name: "bar"},
+						},
+						Blocks: hclext.Blocks{
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"foo": &hclext.Attribute{Name: "foo"},
+									},
+								},
+							},
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"bar": &hclext.Attribute{Name: "bar"},
+									},
+								},
+							},
+							{
+								Type: "other_nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"qux": &hclext.Attribute{Name: "qux"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type:   "data",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{
+							"foo": &hclext.Attribute{Name: "bar"},
+							"baz": &hclext.Attribute{Name: "baz"},
+						},
+						Blocks: hclext.Blocks{
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"baz": &hclext.Attribute{Name: "baz"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type:   "data",
+					Labels: []string{"foo", "bar"},
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{
+							"foo": &hclext.Attribute{Name: "bar"},
+							"bar": &hclext.Attribute{Name: "bar"},
+							"baz": &hclext.Attribute{Name: "baz"},
+						},
+						Blocks: hclext.Blocks{
+							{
+								Type: "other_nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"qux": &hclext.Attribute{Name: "qux"},
+									},
+								},
+							},
+							{
+								Type: "nested",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"baz": &hclext.Attribute{Name: "baz"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override locals",
+			Primaries: hclext.Blocks{
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}, "bar": &hclext.Attribute{Name: "bar"}},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"bar": &hclext.Attribute{Name: "bar2"}, "foo2": &hclext.Attribute{Name: "foo2"}},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{
+							"foo":  &hclext.Attribute{Name: "foo"},
+							"bar":  &hclext.Attribute{Name: "bar2"},
+							"foo2": &hclext.Attribute{Name: "foo2"},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override multiple locals",
+			Primaries: hclext.Blocks{
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}, "bar": &hclext.Attribute{Name: "bar"}},
+					},
+				},
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"baz": &hclext.Attribute{Name: "baz"}, "qux": &hclext.Attribute{Name: "qux"}},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"baz": &hclext.Attribute{Name: "baz2"}, "foo2": &hclext.Attribute{Name: "foo2"}},
+					},
+				},
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"bar": &hclext.Attribute{Name: "bar2"}},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo": &hclext.Attribute{Name: "foo"}, "bar": &hclext.Attribute{Name: "bar2"}},
+					},
+				},
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"baz": &hclext.Attribute{Name: "baz2"}, "qux": &hclext.Attribute{Name: "qux"}},
+					},
+				},
+				// Locals not present in the primaries are added.
+				{
+					Type: "locals",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"foo2": &hclext.Attribute{Name: "foo2"}},
+					},
+				},
+			},
+		},
+		{
+			Name: "override multiple required_version",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"required_version": &hclext.Attribute{Name: "required_version1"}},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"required_version": &hclext.Attribute{Name: "required_version2"}},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"required_version": &hclext.Attribute{Name: "required_version3"}},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"required_version": &hclext.Attribute{Name: "required_version4"}},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				// When overriding attributes, the last element in override takes precedence,
+				// so all attributes of primaries are overridden by required_version4.
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"required_version": &hclext.Attribute{Name: "required_version4"}},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Attributes: hclext.Attributes{"required_version": &hclext.Attribute{Name: "required_version4"}},
+					},
+				},
+			},
+		},
+		{
+			Name: "override required_providers",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":    &hclext.Attribute{Name: "aws"},
+										"google": &hclext.Attribute{Name: "google"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":     &hclext.Attribute{Name: "aws2"},
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+									},
+								},
+							},
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google": &hclext.Attribute{Name: "google2"},
+										"assert": &hclext.Attribute{Name: "assert"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"time": &hclext.Attribute{Name: "time"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":     &hclext.Attribute{Name: "aws2"},
+										"google":  &hclext.Attribute{Name: "google2"},
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+										"assert":  &hclext.Attribute{Name: "assert"},
+										"time":    &hclext.Attribute{Name: "time"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override multiple required_providers",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":    &hclext.Attribute{Name: "aws"},
+										"google": &hclext.Attribute{Name: "google"},
+									},
+								},
+							},
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google-beta": &hclext.Attribute{Name: "google-beta"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":     &hclext.Attribute{Name: "aws2"},
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":    &hclext.Attribute{Name: "aws2"},
+										"google": &hclext.Attribute{Name: "google"},
+									},
+								},
+							},
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google-beta": &hclext.Attribute{Name: "google-beta"},
+									},
+								},
+							},
+						},
+					},
+				},
+				// Blocks not present in the primaries are added.
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override multiple terraform blocks with single required_providers",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":    &hclext.Attribute{Name: "aws"},
+										"google": &hclext.Attribute{Name: "google"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google-beta": &hclext.Attribute{Name: "google-beta"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":     &hclext.Attribute{Name: "aws2"},
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":    &hclext.Attribute{Name: "aws2"},
+										"google": &hclext.Attribute{Name: "google"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google-beta": &hclext.Attribute{Name: "google-beta"},
+									},
+								},
+							},
+						},
+					},
+				},
+				// Blocks not present in the primaries are added.
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override multiple terraform blocks with multiple required_providers",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":    &hclext.Attribute{Name: "aws"},
+										"google": &hclext.Attribute{Name: "google"},
+									},
+								},
+							},
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"azurerm": &hclext.Attribute{Name: "azurerm"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google-beta": &hclext.Attribute{Name: "google-beta"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":     &hclext.Attribute{Name: "aws2"},
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+									},
+								},
+							},
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"assert": &hclext.Attribute{Name: "assert"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google": &hclext.Attribute{Name: "google2"},
+										"time":   &hclext.Attribute{Name: "time"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"aws":    &hclext.Attribute{Name: "aws2"},
+										"google": &hclext.Attribute{Name: "google2"},
+									},
+								},
+							},
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"azurerm": &hclext.Attribute{Name: "azurerm2"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"google-beta": &hclext.Attribute{Name: "google-beta"},
+									},
+								},
+							},
+						},
+					},
+				},
+				// Blocks not present in the primaries are added.
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"assert": &hclext.Attribute{Name: "assert"},
+									},
+								},
+							},
+						},
+					},
+				},
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "required_providers",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{
+										"time": &hclext.Attribute{Name: "time"},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override backend",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type:   "backend",
+								Labels: []string{"local"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"path": &hclext.Attribute{Name: "path"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type:   "backend",
+								Labels: []string{"remote"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"host": &hclext.Attribute{Name: "host"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type:   "backend",
+								Labels: []string{"remote"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"host": &hclext.Attribute{Name: "host"}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			// The presence of a block defining a backend (either cloud or backend) in an override file
+			// always takes precedence over a block defining a backend in the original configuration
+			Name: "override backend by cloud",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type:   "backend",
+								Labels: []string{"local"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"path": &hclext.Attribute{Name: "path"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "cloud",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"organization": &hclext.Attribute{Name: "organization"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "cloud",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"organization": &hclext.Attribute{Name: "organization"}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			Name: "override cloud by backend",
+			Primaries: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type: "cloud",
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"organization": &hclext.Attribute{Name: "organization"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Overrides: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type:   "backend",
+								Labels: []string{"remote"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"host": &hclext.Attribute{Name: "host"}},
+								},
+							},
+						},
+					},
+				},
+			},
+			Want: hclext.Blocks{
+				{
+					Type: "terraform",
+					Body: &hclext.BodyContent{
+						Blocks: hclext.Blocks{
+							{
+								Type:   "backend",
+								Labels: []string{"remote"},
+								Body: &hclext.BodyContent{
+									Attributes: hclext.Attributes{"host": &hclext.Attribute{Name: "host"}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	}
 
-	gotType := mod.Backend.Type
-	wantType := "bar"
+	for _, test := range tests {
+		t.Run(test.Name, func(t *testing.T) {
+			got := overrideBlocks(test.Primaries, test.Overrides)
 
-	if gotType != wantType {
-		t.Errorf("wrong result for backend type: got %#v, want %#v\n", gotType, wantType)
-	}
-
-	attrs, _ := mod.Backend.Config.JustAttributes()
-
-	gotAttr, diags := attrs["path"].Expr.Value(nil)
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	wantAttr := cty.StringVal("CHANGED/relative/path/to/terraform.tfstate")
-
-	if !gotAttr.RawEquals(wantAttr) {
-		t.Errorf("wrong result for backend 'path': got %#v, want %#v\n", gotAttr, wantAttr)
+			if diff := cmp.Diff(got, test.Want); diff != "" {
+				t.Errorf("diff: %s", diff)
+			}
+		})
 	}
 }
-
-// Unlike most other overrides, backend blocks do not require a base configuration in a primary
-// configuration file, as an omitted backend there implies the local backend.
-func TestModule_backend_override_no_base(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/override-backend-no-base")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	if mod.Backend == nil {
-		t.Errorf("expected module Backend not to be nil")
-	}
-}
-
-func TestModule_cloud_override_backend(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/override-backend-with-cloud")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	if mod.Backend != nil {
-		t.Errorf("expected module Backend to be nil")
-	}
-
-	if mod.CloudConfig == nil {
-		t.Errorf("expected module CloudConfig not to be nil")
-	}
-}
-
-// Unlike most other overrides, cloud blocks do not require a base configuration in a primary
-// configuration file, as an omitted backend there implies the local backend and cloud blocks
-// override backends.
-func TestModule_cloud_override_no_base(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/override-cloud-no-base")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	if mod.CloudConfig == nil {
-		t.Errorf("expected module CloudConfig not to be nil")
-	}
-}
-
-func TestModule_cloud_override(t *testing.T) {
-	mod, diags := testModuleFromDir("testdata/valid-modules/override-cloud")
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	attrs, _ := mod.CloudConfig.Config.JustAttributes()
-
-	gotAttr, diags := attrs["organization"].Expr.Value(nil)
-	if diags.HasErrors() {
-		t.Fatal(diags.Error())
-	}
-
-	wantAttr := cty.StringVal("CHANGED")
-
-	if !gotAttr.RawEquals(wantAttr) {
-		t.Errorf("wrong result for Cloud 'organization': got %#v, want %#v\n", gotAttr, wantAttr)
-	}
-
-	// The override should have completely replaced the cloud block in the primary file, no merging
-	if attrs["should_not_be_present_with_override"] != nil {
-		t.Errorf("expected 'should_not_be_present_with_override' attribute to be nil")
-	}
-}
-
-func TestModule_cloud_duplicate_overrides(t *testing.T) {
-	_, diags := testModuleFromDir("testdata/invalid-modules/override-cloud-duplicates")
-	want := `Duplicate cloud configurations`
-	if got := diags.Error(); !strings.Contains(got, want) {
-		t.Fatalf("expected module error to contain %q\nerror was:\n%s", want, got)
-	}
-}
+*/

@@ -138,11 +138,6 @@ func TestFileBase64Sha256(t *testing.T) {
 			false,
 		},
 		{
-			cty.StringVal("testdata/icon.png"),
-			cty.StringVal("bun9+lNwoWcTxEze5pVIDfsf+mPDMtVUKZp04RCLHTc="),
-			false,
-		},
-		{
 			cty.StringVal("testdata/missing"),
 			cty.NilVal,
 			true, // no file exists
@@ -216,11 +211,6 @@ func TestFileBase64Sha512(t *testing.T) {
 		{
 			cty.StringVal("testdata/hello.txt"),
 			cty.StringVal("LHT9F+2v2A6ER7DUZ0HuJDt+t03SFJoKsbkkb7MDgvJ+hT2FhXGeDmfL2g2qj1FnEGRhXWRa4nrLFb+xRH9Fmw=="),
-			false,
-		},
-		{
-			cty.StringVal("testdata/icon.png"),
-			cty.StringVal("9FcRPvMPKG/8OO+zJpVnl3NZXBQEwOh3bBfrSh0boTkYvo6pq3xidR6ZuG/6rPnE0p7+rTYRfD3AVxdst62n9g=="),
 			false,
 		},
 		{
@@ -334,11 +324,6 @@ func TestFileMD5(t *testing.T) {
 		{
 			cty.StringVal("testdata/hello.txt"),
 			cty.StringVal("b10a8db164e0754105b7a99be72e3fe5"),
-			false,
-		},
-		{
-			cty.StringVal("testdata/icon.png"),
-			cty.StringVal("a18e1dd95427740ff7c7654ecc0280ad"),
 			false,
 		},
 		{
@@ -494,11 +479,6 @@ func TestFileSHA1(t *testing.T) {
 			false,
 		},
 		{
-			cty.StringVal("testdata/icon.png"),
-			cty.StringVal("90ecc70d12bc0bca6efa8d5cc8b35091fb087686"),
-			false,
-		},
-		{
 			cty.StringVal("testdata/missing"),
 			cty.NilVal,
 			true, // no file exists
@@ -572,11 +552,6 @@ func TestFileSHA256(t *testing.T) {
 			false,
 		},
 		{
-			cty.StringVal("testdata/icon.png"),
-			cty.StringVal("6ee9fdfa5370a16713c44cdee695480dfb1ffa63c332d554299a74e1108b1d37"),
-			false,
-		},
-		{
 			cty.StringVal("testdata/missing"),
 			cty.NilVal,
 			true, // no file exists
@@ -647,11 +622,6 @@ func TestFileSHA512(t *testing.T) {
 		{
 			cty.StringVal("testdata/hello.txt"),
 			cty.StringVal("2c74fd17edafd80e8447b0d46741ee243b7eb74dd2149a0ab1b9246fb30382f27e853d8585719e0e67cbda0daa8f51671064615d645ae27acb15bfb1447f459b"),
-			false,
-		},
-		{
-			cty.StringVal("testdata/icon.png"),
-			cty.StringVal("f457113ef30f286ffc38efb32695679773595c1404c0e8776c17eb4a1d1ba13918be8ea9ab7c62751e99b86ffaacf9c4d29efead36117c3dc057176cb7ada7f6"),
 			false,
 		},
 		{

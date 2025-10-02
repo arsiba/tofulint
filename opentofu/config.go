@@ -7,6 +7,7 @@ package opentofu
 
 import (
 	"context"
+	"fmt"
 	"sort"
 
 	"github.com/arsiba/tofulint/opentofu/addrs"
@@ -97,6 +98,16 @@ func buildChildModules(ctx context.Context, parent *Config, walker ModuleWalker)
 		path := make([]string, len(parent.Path)+1)
 		copy(path, parent.Path)
 		path[len(path)-1] = call.Name
+
+		// Return an error for nesting too deep to avoid infinite loops due to circular references.
+		if len(path) > 10 {
+			return ret, diags.Append(&hcl.Diagnostic{
+				Severity: hcl.DiagError,
+				Summary:  "Module stack level too deep",
+				Detail:   fmt.Sprintf("This configuration has nested modules more than 10 levels deep. This is mainly caused by circular references. current path: %s", parent.Path),
+				Subject:  &call.DeclRange,
+			})
+		}
 
 		req := ModuleRequest{
 			Name:       call.Name,

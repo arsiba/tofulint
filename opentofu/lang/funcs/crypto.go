@@ -29,9 +29,9 @@ import (
 )
 
 var UUIDFunc = function.New(&function.Spec{
-	Params: []function.Parameter{},
-	Type:   function.StaticReturnType(cty.String),
-
+	Params:       []function.Parameter{},
+	Type:         function.StaticReturnType(cty.String),
+	RefineResult: refineNotNull,
 	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 		result, err := uuid.GenerateUUID()
 		if err != nil {
@@ -52,8 +52,8 @@ var UUIDV5Func = function.New(&function.Spec{
 			Type: cty.String,
 		},
 	},
-	Type: function.StaticReturnType(cty.String),
-
+	Type:         function.StaticReturnType(cty.String),
+	RefineResult: refineNotNull,
 	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 		var namespace uuidv5.UUID
 		switch {
@@ -107,8 +107,8 @@ var BcryptFunc = function.New(&function.Spec{
 		Name: "cost",
 		Type: cty.Number,
 	},
-	Type: function.StaticReturnType(cty.String),
-
+	Type:         function.StaticReturnType(cty.String),
+	RefineResult: refineNotNull,
 	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 		defaultCost := 10
 
@@ -155,8 +155,8 @@ var RsaDecryptFunc = function.New(&function.Spec{
 			Type: cty.String,
 		},
 	},
-	Type: function.StaticReturnType(cty.String),
-
+	Type:         function.StaticReturnType(cty.String),
+	RefineResult: refineNotNull,
 	Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 		s := args[0].AsString()
 		key := args[1].AsString()
@@ -231,8 +231,8 @@ func makeStringHashFunction(hf func() hash.Hash, enc func([]byte) string) functi
 				Type: cty.String,
 			},
 		},
-		Type: function.StaticReturnType(cty.String),
-
+		Type:         function.StaticReturnType(cty.String),
+		RefineResult: refineNotNull,
 		Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 			s := args[0].AsString()
 			h := hf()
@@ -251,8 +251,8 @@ func makeFileHashFunction(baseDir string, hf func() hash.Hash, enc func([]byte) 
 				Type: cty.String,
 			},
 		},
-		Type: function.StaticReturnType(cty.String),
-
+		Type:         function.StaticReturnType(cty.String),
+		RefineResult: refineNotNull,
 		Impl: func(args []cty.Value, retType cty.Type) (ret cty.Value, err error) {
 			path := args[0].AsString()
 			f, err := openFile(baseDir, path)

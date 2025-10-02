@@ -1,7 +1,5 @@
-// Copyright (c) The OpenTofu Authors
-// SPDX-License-Identifier: MPL-2.0
 // Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: BUSL-1.1
 
 package lang
 
@@ -9,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/hcl/v2"
@@ -329,6 +328,17 @@ func TestFunctions(t *testing.T) {
 			},
 		},
 
+		"ephemeralasnull": {
+			{
+				`ephemeralasnull(local.ephemeral)`,
+				cty.NullVal(cty.String),
+			},
+			{
+				`ephemeralasnull("not ephemeral")`,
+				cty.StringVal("not ephemeral"),
+			},
+		},
+
 		"file": {
 			{
 				`file("hello.txt")`,
@@ -479,6 +489,13 @@ func TestFunctions(t *testing.T) {
 			{
 				`index(["a", "b", "c"], "a")`,
 				cty.NumberIntVal(0),
+			},
+		},
+
+		"issensitive": {
+			{
+				`issensitive(1)`,
+				cty.False,
 			},
 		},
 
@@ -900,6 +917,25 @@ func TestFunctions(t *testing.T) {
 				`templatefile("hello.tmpl", {name = "Jodie"})`,
 				cty.StringVal("Hello, Jodie!"),
 			},
+			{
+				`core::templatefile("hello.tmpl", {name = "Namespaced Jodie"})`,
+				cty.StringVal("Hello, Namespaced Jodie!"),
+			},
+		},
+
+		"templatestring": {
+			{
+				`templatestring(local.greeting_template, {
+  name = "Arthur"
+})`,
+				cty.StringVal("Hello, Arthur!"),
+			},
+			{
+				`core::templatestring(local.greeting_template, {
+  name = "Namespaced Arthur"
+})`,
+				cty.StringVal("Hello, Namespaced Arthur!"),
+			},
 		},
 
 		"timeadd": {
@@ -1040,6 +1076,10 @@ func TestFunctions(t *testing.T) {
 				`upper("hello")`,
 				cty.StringVal("HELLO"),
 			},
+			{
+				`core::upper("hello")`,
+				cty.StringVal("HELLO"),
+			},
 		},
 
 		"urlencode": {
@@ -1140,6 +1180,11 @@ func TestFunctions(t *testing.T) {
 			delete(allFunctions, impureFunc)
 		}
 		for f := range scope.Functions() {
+			if strings.Contains(f, "::") {
+				// Only non-namespaced functions are absolutely required to
+				// have at least one test. (Others _may_ have tests.)
+				continue
+			}
 			if _, ok := tests[f]; !ok {
 				t.Errorf("Missing test for function %s\n", f)
 			}
@@ -1150,7 +1195,12 @@ func TestFunctions(t *testing.T) {
 		t.Run(funcName, func(t *testing.T) {
 			for _, test := range funcTests {
 				t.Run(test.src, func(t *testing.T) {
-					data := &dataForTests{} // no variables available; we only need literals here
+					data := &dataForTests{
+						LocalValues: map[string]cty.Value{
+							"greeting_template": cty.StringVal("Hello, ${name}!"),
+							"ephemeral":         cty.StringVal("ephemeral").Mark(marks.Ephemeral),
+						},
+					}
 					scope := &Scope{
 						Data:    data,
 						BaseDir: "./testdata/functions-test", // for the functions that read from the filesystem
@@ -1218,3 +1268,83 @@ Had'em
 
 E.E. Cummings`
 )
+
+func TestNewMockFunction(t *testing.T) {
+	tests := []struct {
+		name string
+		call *FunctionCall
+		args []cty.Value
+	}{
+		{
+			name: "no args",
+			call: &FunctionCall{
+				Name:      "foo",
+				ArgsCount: 0,
+			},
+			args: []cty.Value{},
+		},
+		{
+			name: "single arg",
+			call: &FunctionCall{
+				Name:      "bar",
+				ArgsCount: 1,
+			},
+			args: []cty.Value{cty.StringVal("hello")},
+		},
+		{
+			name: "multiple args",
+			call: &FunctionCall{
+				Name:      "baz",
+				ArgsCount: 2,
+			},
+			args: []cty.Value{cty.BoolVal(false), cty.NumberIntVal(1)},
+		},
+		{
+			name: "null arg",
+			call: &FunctionCall{
+				Name:      "null",
+				ArgsCount: 1,
+			},
+			args: []cty.Value{cty.NullVal(cty.String)},
+		},
+		{
+			name: "unknown arg",
+			call: &FunctionCall{
+				Name:      "unknown",
+				ArgsCount: 1,
+			},
+			args: []cty.Value{cty.UnknownVal(cty.Number)},
+		},
+		{
+			name: "dynamic value arg",
+			call: &FunctionCall{
+				Name:      "dynamic",
+				ArgsCount: 1,
+			},
+			args: []cty.Value{cty.DynamicVal},
+		},
+		{
+			name: "marked value arg",
+			call: &FunctionCall{
+				Name:      "marked",
+				ArgsCount: 1,
+			},
+			args: []cty.Value{cty.StringVal("marked").Mark(marks.Sensitive)},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			fn := NewMockFunction(test.call)
+
+			got, err := fn.Call(test.args)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if !got.RawEquals(cty.DynamicVal) {
+				t.Errorf("want: cty.DynamicVal, got: %s", got.GoString())
+			}
+		})
+	}
+}

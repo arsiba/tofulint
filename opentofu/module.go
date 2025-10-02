@@ -38,8 +38,9 @@ type Module struct {
 	Sources map[string][]byte
 	Files   map[string]*hcl.File
 
-	primaries map[string]*hcl.File
-	overrides map[string]*hcl.File
+	primaries         map[string]*hcl.File
+	overrides         map[string]*hcl.File
+	overrideFilenames []string
 }
 
 func NewEmptyModule() *Module {
@@ -54,8 +55,9 @@ func NewEmptyModule() *Module {
 		Sources: map[string][]byte{},
 		Files:   map[string]*hcl.File{},
 
-		primaries: map[string]*hcl.File{},
-		overrides: map[string]*hcl.File{},
+		primaries:         map[string]*hcl.File{},
+		overrides:         map[string]*hcl.File{},
+		overrideFilenames: []string{},
 	}
 }
 
