@@ -129,7 +129,7 @@ func unknownOptionHandler(option string, arg flags.SplitArgument, args []string)
 	if option == "loglevel" {
 		return []string{}, errors.New("--loglevel option was removed in v0.40.0. Please set TFLINT_LOG environment variables instead")
 	}
-	return []string{}, fmt.Errorf(`--%s is unknown option. Please run "tflint --help"`, option)
+	return []string{}, fmt.Errorf(`--%s is unknown option. Please run "tofulint --help"`, option)
 }
 
 func findWorkingDirs(opts Options) ([]string, error) {

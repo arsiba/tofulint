@@ -166,7 +166,7 @@ func TestIntegration(t *testing.T) {
 			command: "./tflint --unknown",
 			dir:     "no_issues",
 			status:  cmd.ExitCodeError,
-			stderr:  `--unknown is unknown option. Please run "tflint --help"`,
+			stderr:  `--unknown is unknown option. Please run "tofulint --help"`,
 		},
 		{
 			name:    "invalid format",
