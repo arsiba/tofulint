@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-BINARY_NAME="tofulint"
+BINARY_NAME="tofulint-v0.0.2"
 REPO="arsiba/tofulint"
 
 echo "===================================================="
@@ -31,7 +31,7 @@ echo "===================================================="
 echo "Downloading ${BINARY_NAME} $version ..."
 
 download_path=$(mktemp -d -t tofulint.XXXXXXXXXX)
-download_executable="${download_path}/${BINARY_NAME}"
+download_executable="${download_path}/tofulint"
 
 curl --fail -sSL -o "${download_executable}" \
   "https://github.com/${REPO}/releases/download/${version}/${BINARY_NAME}"
@@ -59,3 +59,6 @@ rm -rf "${download_path}"
 echo "===================================================="
 echo "${BINARY_NAME} has been installed to ${dest}"
 "${dest}/${BINARY_NAME}" -v || echo "Version could not be displayed"
+
+echo "===================================================="
+echo "Start by calling tofulint in your terminal"
