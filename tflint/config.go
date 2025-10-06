@@ -18,7 +18,9 @@ import (
 )
 
 var defaultConfigFile = ".tflint.hcl"
+var defaultTofuConfigFile = ".tofulint.hcl"
 var fallbackConfigFile = "~/.tflint.hcl"
+var fallbackTofuConfigFile = "~/.tofulint.hcl"
 
 var configSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
@@ -128,9 +130,12 @@ func EmptyConfig() *Config {
 // The priority of the configuration files is as follows:
 //
 // 1. file passed by the --config option
-// 2. file set by the TFLINT_CONFIG_FILE environment variable
-// 3. current directory (./.tflint.hcl)
-// 4. home directory (~/.tflint.hcl)
+// 2. file set by the TFLINT_CONFIG_FILE environment variable^
+// 3. current directory (.tofulint.hcl)
+// 4. current directory (.tflint.hcl)
+// 5. home directory (~/.tofulint.hcl)
+// 6. current directory (./.tflint.hcl)
+// 7. home directory (~/.tflint.hcl)
 //
 // For 1 and 2, if the file does not exist, an error will be returned immediately.
 // If 3 fails, fallback to 4, and If it fails, an empty configuration is returned.
@@ -167,7 +172,18 @@ func LoadConfig(fs afero.Afero, file string) (*Config, error) {
 		return cfg.enableBundledPlugin(), nil
 	}
 
-	// Load the default config file
+	// Load the default ToFuLint config file
+	log.Printf("[INFO] Load config: %s", defaultTofuConfigFile)
+	if f, err := fs.Open(defaultTofuConfigFile); err == nil {
+		cfg, err := loadConfig(f)
+		if err != nil {
+			return nil, err
+		}
+		return cfg.enableBundledPlugin(), nil
+	}
+	log.Printf("[INFO] file not found")
+
+	// Load the default TFLint config file
 	log.Printf("[INFO] Load config: %s", defaultConfigFile)
 	if f, err := fs.Open(defaultConfigFile); err == nil {
 		cfg, err := loadConfig(f)
@@ -178,7 +194,22 @@ func LoadConfig(fs afero.Afero, file string) (*Config, error) {
 	}
 	log.Printf("[INFO] file not found")
 
-	// Load the fallback config file
+	// Load the fallback ToFuLint config file
+	fallbackTofu, err := homedir.Expand(fallbackTofuConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("[INFO] Load config: %s", fallbackTofu)
+	if f, err := fs.Open(fallbackTofu); err == nil {
+		cfg, err := loadConfig(f)
+		if err != nil {
+			return nil, err
+		}
+		return cfg.enableBundledPlugin(), nil
+	}
+	log.Printf("[INFO] file not found")
+
+	// Load the fallback TFLint config file
 	fallback, err := homedir.Expand(fallbackConfigFile)
 	if err != nil {
 		return nil, err

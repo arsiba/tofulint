@@ -47,7 +47,7 @@ func (r *TerraformAutofixComment) Check(runner tflint.Runner) error {
 	}
 
 	for name, file := range files {
-		if strings.HasSuffix(name, ".tf.json") {
+		if strings.HasSuffix(name, ".tf.json") || strings.HasSuffix(name, ".tofu.json") {
 			continue
 		}
 
