@@ -419,7 +419,7 @@ func (c *Config) enableBundledPlugin() *Config {
 		c.Plugins["opentofu"] = &PluginConfig{
 			Name:    "opentofu",
 			Enabled: true,
-			Version: "0.0.6",
+			Version: "0.0.7",
 			Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 			Body:    f.Body,
 		}

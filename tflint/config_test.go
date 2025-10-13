@@ -120,7 +120,7 @@ plugin "baz" {
 					"opentofu": {
 						Name:    "opentofu",
 						Enabled: true,
-						Version: "0.0.6",
+						Version: "0.0.7",
 						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
@@ -161,7 +161,7 @@ config {
 					"opentofu": {
 						Name:    "opentofu",
 						Enabled: true,
-						Version: "0.0.6",
+						Version: "0.0.7",
 						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
@@ -192,7 +192,7 @@ config {
 					"opentofu": {
 						Name:    "opentofu",
 						Enabled: true,
-						Version: "0.0.6",
+						Version: "0.0.7",
 						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
@@ -376,7 +376,7 @@ plugin "foo" {
 					"opentofu": {
 						Name:    "opentofu",
 						Enabled: true,
-						Version: "0.0.6",
+						Version: "0.0.7",
 						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
@@ -415,7 +415,7 @@ config {
 					"opentofu": {
 						Name:    "opentofu",
 						Enabled: true,
-						Version: "0.0.6",
+						Version: "0.0.7",
 						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
@@ -445,7 +445,7 @@ config {
 					"opentofu": {
 						Name:    "opentofu",
 						Enabled: true,
-						Version: "0.0.6",
+						Version: "0.0.7",
 						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
