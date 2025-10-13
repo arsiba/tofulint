@@ -300,7 +300,7 @@ func Test_Discovery_bundledPluginWithVersion(t *testing.T) {
 			"terraform": {
 				Name:    "terraform",
 				Enabled: true,
-				Source:  "github.com/terraform-linters/tflint-ruleset-terraform",
+				Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 				Version: "0.1.0",
 			},
 		},

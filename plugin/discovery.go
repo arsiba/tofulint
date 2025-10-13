@@ -13,7 +13,7 @@ import (
 	"github.com/arsiba/tofulint/tflint"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/mitchellh/go-homedir"
-	"github.com/terraform-linters/tflint-plugin-sdk/plugin/host2plugin"
+	"github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin"
 )
 
 // Discovery searches and launches plugins according the passed configuration.
@@ -76,19 +76,34 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 	return &Plugin{RuleSets: rulesets, clients: clients}, nil
 }
 
-// FindPluginPath returns the plugin binary path.
 func FindPluginPath(config *InstallConfig) (string, error) {
 	dir, err := getPluginDir(config.globalConfig)
 	if err != nil {
 		return "", err
 	}
 
-	path, err := findPluginPath(filepath.Join(dir, config.InstallPath()))
-	if err != nil {
-		return "", err
+	defaultPath := filepath.Join(dir, config.InstallPath(false))
+	path, err := findPluginPath(defaultPath)
+	if err == nil {
+		log.Printf("[DEBUG] Found plugin path: %s", path)
+		return path, nil
 	}
-	log.Printf("[DEBUG] Find plugin path: %s", path)
-	return path, err
+
+	if os.IsNotExist(err) {
+		altPath := filepath.Join(dir, config.InstallPath(true))
+		path, altErr := findPluginPath(altPath)
+		if altErr == nil {
+			log.Printf("[DEBUG] Found alternative plugin path: %s", path)
+			return path, nil
+		}
+
+		if os.IsNotExist(altErr) {
+			return "", os.ErrNotExist
+		}
+		return "", altErr
+	}
+
+	return "", err
 }
 
 // getPluginDir returns the base plugin directory.

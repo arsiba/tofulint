@@ -12,7 +12,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	hcljson "github.com/hashicorp/hcl/v2/json"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 )
 
 // Module is a container for a set of configuration constructs that are

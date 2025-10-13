@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/arsiba/tofulint/plugin/stub-generator/sources/customrulesettesting/custom"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
-	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 // AwsInstanceExampleTypeRule checks whether ...

@@ -11,7 +11,7 @@ import (
 	"github.com/fatih/color"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclparse"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 var colorBold = color.New(color.Bold).SprintfFunc()

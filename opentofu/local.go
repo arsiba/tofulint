@@ -2,7 +2,7 @@ package opentofu
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 )
 
 // A consistent detail message for all "not a valid identifier" diagnostics.

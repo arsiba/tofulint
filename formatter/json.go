@@ -7,7 +7,7 @@ import (
 
 	"github.com/arsiba/tofulint/tflint"
 	"github.com/hashicorp/hcl/v2"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 // JSONIssue is a temporary structure for converting TofuLint issues to JSON.

@@ -7,7 +7,7 @@ package opentofu
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 )
 
 // Resource represents a "resource" or "data" block in a module or file.

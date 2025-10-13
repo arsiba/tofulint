@@ -8,7 +8,7 @@ Plugins are independent binaries and use [go-plugin](https://github.com/hashicor
 
 If you want to create a new plugin, [The template repository](https://github.com/terraform-linters/tflint-ruleset-template) is available to satisfy these specification. You can create your own repository from "Use this template" and easily add rules based on some reference rules.
 
-The template repository uses the [SDK](https://github.com/terraform-linters/tflint-plugin-sdk) that wraps the go-plugin for communication with TFLint. See also the [Architecture](https://github.com/terraform-linters/tflint-plugin-sdk#architecture) section for the architecture of the plugin system.
+The template repository uses the [SDK](https://github.com/arsiba/tofulint-plugin-sdk) that wraps the go-plugin for communication with TFLint. See also the [Architecture](https://github.com/arsiba/tofulint-plugin-sdk#architecture) section for the architecture of the plugin system.
 
 ## 1. Creating a repository from the template
 
@@ -36,7 +36,7 @@ TFLint version 0.28.1
 
 ## 3. Changing/Adding the rules
 
-Rename the ruleset and add/edit rules. After making changes, you can check the behavior with `make install`. See also the [tflint-plugin-sdk API reference](https://pkg.go.dev/github.com/terraform-linters/tflint-plugin-sdk) for communication with the host process.
+Rename the ruleset and add/edit rules. After making changes, you can check the behavior with `make install`. See also the [tflint-plugin-sdk API reference](https://pkg.go.dev/github.com/arsiba/tofulint-plugin-sdk) for communication with the host process.
 
 ## 4. Creating a GitHub Release
 

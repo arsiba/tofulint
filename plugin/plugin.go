@@ -3,7 +3,7 @@ package plugin
 import (
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/hashicorp/go-version"
-	"github.com/terraform-linters/tflint-plugin-sdk/plugin/host2plugin"
+	"github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin"
 )
 
 // PluginRoot is the root directory of the plugins

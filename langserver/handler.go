@@ -19,8 +19,8 @@ import (
 	lsp "github.com/sourcegraph/go-lsp"
 	"github.com/sourcegraph/jsonrpc2"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

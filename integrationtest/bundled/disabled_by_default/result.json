@@ -4,7 +4,7 @@
       "rule": {
         "name": "terraform_unused_declarations",
         "severity": "warning",
-        "link": "https://github.com/terraform-linters/tflint-ruleset-terraform/blob/v0.1.1/docs/rules/terraform_unused_declarations.md"
+        "link": "https://github.com/arsiba/tofulint-ruleset-opentofu/blob/v0.1.1/docs/rules/terraform_unused_declarations.md"
       },
       "message": "variable \"unused\" is declared but not used",
       "range": {

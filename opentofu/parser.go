@@ -317,13 +317,17 @@ func (p *Parser) autoLoadValuesDirFiles(baseDir, dir string) (files []string, di
 	return
 }
 
-// configFileExt returns the Terraform configuration extension of the given
+// configFileExt returns the Terraform or Tofu configuration extension of the given
 // path, or a blank string if it is not a recognized extension.
 func configFileExt(path string) string {
 	if strings.HasSuffix(path, ".tf") {
 		return ".tf"
 	} else if strings.HasSuffix(path, ".tf.json") {
 		return ".tf.json"
+	} else if strings.HasSuffix(path, ".tofu") {
+		return ".tofu"
+	} else if strings.HasSuffix(path, ".tofu.json") {
+		return ".tofu.json"
 	} else {
 		return ""
 	}

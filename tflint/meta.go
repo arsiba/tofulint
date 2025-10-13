@@ -7,7 +7,7 @@ import (
 )
 
 // Version is application version
-var Version *version.Version = version.Must(version.NewVersion("0.0.2"))
+var Version *version.Version = version.Must(version.NewVersion("0.0.3"))
 
 // ReferenceLink returns the rule reference link
 func ReferenceLink(name string) string {

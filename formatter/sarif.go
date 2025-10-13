@@ -8,7 +8,7 @@ import (
 	"github.com/arsiba/tofulint/tflint"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/owenrumney/go-sarif/sarif"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 func (f *Formatter) sarifPrint(issues tflint.Issues, appErr error) {

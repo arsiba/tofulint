@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 	"github.com/arsiba/tofulint/opentofu"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -13,12 +15,12 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
 )
 
 var defaultConfigFile = ".tflint.hcl"
+var defaultTofuConfigFile = ".tofulint.hcl"
 var fallbackConfigFile = "~/.tflint.hcl"
+var fallbackTofuConfigFile = "~/.tofulint.hcl"
 
 var configSchema = &hcl.BodySchema{
 	Blocks: []hcl.BlockHeaderSchema{
@@ -128,14 +130,17 @@ func EmptyConfig() *Config {
 // The priority of the configuration files is as follows:
 //
 // 1. file passed by the --config option
-// 2. file set by the TFLINT_CONFIG_FILE environment variable
-// 3. current directory (./.tflint.hcl)
-// 4. home directory (~/.tflint.hcl)
+// 2. file set by the TFLINT_CONFIG_FILE environment variable^
+// 3. current directory (.tofulint.hcl)
+// 4. current directory (.tflint.hcl)
+// 5. home directory (~/.tofulint.hcl)
+// 6. current directory (./.tflint.hcl)
+// 7. home directory (~/.tflint.hcl)
 //
 // For 1 and 2, if the file does not exist, an error will be returned immediately.
 // If 3 fails, fallback to 4, and If it fails, an empty configuration is returned.
 //
-// It also automatically enables bundled plugin if the "terraform"
+// It also automatically enables bundled plugin if the "opentofu"
 // plugin block is not explicitly declared.
 func LoadConfig(fs afero.Afero, file string) (*Config, error) {
 	// Load the file passed by the --config option
@@ -167,7 +172,18 @@ func LoadConfig(fs afero.Afero, file string) (*Config, error) {
 		return cfg.enableBundledPlugin(), nil
 	}
 
-	// Load the default config file
+	// Load the default ToFuLint config file
+	log.Printf("[INFO] Load config: %s", defaultTofuConfigFile)
+	if f, err := fs.Open(defaultTofuConfigFile); err == nil {
+		cfg, err := loadConfig(f)
+		if err != nil {
+			return nil, err
+		}
+		return cfg.enableBundledPlugin(), nil
+	}
+	log.Printf("[INFO] file not found")
+
+	// Load the default TFLint config file
 	log.Printf("[INFO] Load config: %s", defaultConfigFile)
 	if f, err := fs.Open(defaultConfigFile); err == nil {
 		cfg, err := loadConfig(f)
@@ -178,7 +194,22 @@ func LoadConfig(fs afero.Afero, file string) (*Config, error) {
 	}
 	log.Printf("[INFO] file not found")
 
-	// Load the fallback config file
+	// Load the fallback ToFuLint config file
+	fallbackTofu, err := homedir.Expand(fallbackTofuConfigFile)
+	if err != nil {
+		return nil, err
+	}
+	log.Printf("[INFO] Load config: %s", fallbackTofu)
+	if f, err := fs.Open(fallbackTofu); err == nil {
+		cfg, err := loadConfig(f)
+		if err != nil {
+			return nil, err
+		}
+		return cfg.enableBundledPlugin(), nil
+	}
+	log.Printf("[INFO] file not found")
+
+	// Load the fallback TFLint config file
 	fallback, err := homedir.Expand(fallbackConfigFile)
 	if err != nil {
 		return nil, err
@@ -382,18 +413,20 @@ func (c *Config) enableBundledPlugin() *Config {
 		panic(diags)
 	}
 
-	if _, exists := c.Plugins["terraform"]; !exists {
-		log.Print(`[INFO] The "terraform" plugin block is not found. Enable the plugin "terraform" automatically`)
+	if _, exists := c.Plugins["opentofu"]; !exists {
+		log.Print(`[INFO] The "opentofu" plugin block is not found. Enable the plugin "opentofu" automatically`)
 
-		c.Plugins["terraform"] = &PluginConfig{
-			Name:    "terraform",
+		c.Plugins["opentofu"] = &PluginConfig{
+			Name:    "opentofu",
 			Enabled: true,
+			Version: "0.0.6",
+			Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 			Body:    f.Body,
 		}
 
 		// Implicit preset is ignored if you enable DisabledByDefault
 		if c.DisabledByDefault {
-			c.Plugins["terraform"].Body = nil
+			c.Plugins["opentofu"].Body = nil
 		}
 	}
 	return c
@@ -494,7 +527,7 @@ func (c *PluginConfig) Content(schema *hclext.BodySchema) (*hclext.BodyContent, 
 }
 
 // RuleSet is an interface to handle plugin's RuleSet.
-// The real impl is github.com/terraform-linters/tflint-plugin-sdk/plugin/host2plugin.GRPCClient.
+// The real impl is github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin.GRPCClient.
 type RuleSet interface {
 	RuleSetName() (string, error)
 	RuleSetVersion() (string, error)

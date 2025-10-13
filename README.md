@@ -36,7 +36,7 @@ At this stage, no releases are verified or signed.
 A Docker-based installation will be available in a future release.
 
 ## Getting Started
-TofuLint comes bundled with a [Terraform language ruleset](https://github.com/terraform-linters/tflint-ruleset-terraform), enabling recommended rules by default.
+TofuLint comes bundled with a [Terraform language ruleset](https://github.com/arsiba/tofulint-ruleset-opentofu), enabling recommended rules by default.
 
 ### Enabling the Terraform Plugin
 Declare the plugin block in your `.tflint.hcl`:
@@ -48,7 +48,7 @@ plugin "terraform" {
 }
 ```
 
-More details: [TFLint Terraform Ruleset Configuration](https://github.com/terraform-linters/tflint-ruleset-terraform/blob/main/docs/configuration.md)
+More details: [TFLint Terraform Ruleset Configuration](https://github.com/arsiba/tofulint-ruleset-opentofu/blob/main/docs/configuration.md)
 
 ### Cloud Provider Plugins
 

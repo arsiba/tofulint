@@ -92,7 +92,7 @@ When the plugin is enabled, TofuLint invokes the `tflint-ruleset-[name]` (`tflin
 
 ## Bundled plugin
 
-[TofuLint Ruleset for Terraform Language](https://github.com/terraform-linters/tflint-ruleset-terraform) is built directly into TofuLint binary. This is called a bundled plugin. Unlike other plugins, bundled plugins can be used without installation.
+[TofuLint Ruleset for Terraform Language](https://github.com/arsiba/tofulint-ruleset-opentofu) is built directly into TofuLint binary. This is called a bundled plugin. Unlike other plugins, bundled plugins can be used without installation.
 
 A bundled plugin is enabled by default without a plugin block declaration. The default config is below:
 
@@ -113,7 +113,7 @@ plugin "terraform" {
   preset  = "recommended"
 
   version = "0.1.0"
-  source  = "github.com/terraform-linters/tflint-ruleset-terraform"
+  source  = "github.com/arsiba/tofulint-ruleset-opentofu"
 }
 ```
 
