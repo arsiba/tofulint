@@ -40,8 +40,13 @@ func (c *InstallConfig) ManuallyInstalled() bool {
 }
 
 // InstallPath returns an installation path from the plugin directory.
-func (c *InstallConfig) InstallPath() string {
-	return filepath.Join(c.Source, c.Version, fmt.Sprintf("tflint-ruleset-%s", c.Name))
+// The prefix is determined based on which asset was found.
+func (c *InstallConfig) InstallPath(useAlt bool) string {
+	prefix := "tflint"
+	if useAlt {
+		prefix = "tofulint"
+	}
+	return filepath.Join(c.Source, c.Version, fmt.Sprintf("%s-ruleset-%s", prefix, c.Name))
 }
 
 // TagName returns a tag name that the GitHub release should meet.
@@ -51,10 +56,14 @@ func (c *InstallConfig) TagName() string {
 	return fmt.Sprintf("v%s", c.Version)
 }
 
-// AssetName returns a name that the asset contained in the release should meet.
-// The name must be in a format similar to `tflint-ruleset-aws_darwin_amd64.zip`.
+// AssetName returns the preferred asset name.
 func (c *InstallConfig) AssetName() string {
 	return fmt.Sprintf("tflint-ruleset-%s_%s_%s.zip", c.Name, runtime.GOOS, runtime.GOARCH)
+}
+
+// AltAssetName returns the alternative asset name used by newer plugin releases.
+func (c *InstallConfig) AltAssetName() string {
+	return fmt.Sprintf("tofulint-ruleset-%s_%s_%s.zip", c.Name, runtime.GOOS, runtime.GOARCH)
 }
 
 // Install fetches the release from GitHub and puts the binary in the plugin directory.
@@ -79,15 +88,29 @@ func (c *InstallConfig) Install() (string, error) {
 		return "", fmt.Errorf("Failed to get plugin dir: %w", err)
 	}
 
-	path := filepath.Join(dir, c.InstallPath()+fileExt())
-	log.Printf("[DEBUG] Mkdir plugin dir: %s", filepath.Dir(path))
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return "", fmt.Errorf("Failed to mkdir to %s: %w", filepath.Dir(path), err)
-	}
-
 	assets, err := c.fetchReleaseAssets()
 	if err != nil {
 		return "", fmt.Errorf("Failed to fetch GitHub releases: %w", err)
+	}
+
+	// Determine which asset name exists
+	assetName := c.AssetName()
+	useAlt := false
+	if _, ok := assets[assetName]; !ok {
+		// Try alternative naming
+		if _, ok := assets[c.AltAssetName()]; ok {
+			assetName = c.AltAssetName()
+			useAlt = true
+		} else {
+			return "", fmt.Errorf("No matching asset found (tried %s and %s)", c.AssetName(), c.AltAssetName())
+		}
+	}
+
+	// Now compute the final path accordingly
+	path := filepath.Join(dir, c.InstallPath(useAlt)+fileExt())
+	log.Printf("[DEBUG] Mkdir plugin dir: %s", filepath.Dir(path))
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		return "", fmt.Errorf("Failed to mkdir to %s: %w", filepath.Dir(path), err)
 	}
 
 	log.Printf("[DEBUG] Download checksums.txt")
@@ -119,8 +142,8 @@ func (c *InstallConfig) Install() (string, error) {
 		log.Printf("[DEBUG] Verified signature successfully")
 	}
 
-	log.Printf("[DEBUG] Download %s", c.AssetName())
-	zipFile, err := c.downloadToTempFile(assets[c.AssetName()])
+	log.Printf("[DEBUG] Download %s", assetName)
+	zipFile, err := c.downloadToTempFile(assets[assetName])
 	if zipFile != nil {
 		defer os.Remove(zipFile.Name())
 	}
@@ -132,13 +155,13 @@ func (c *InstallConfig) Install() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("Failed to parse checksums file: %s", err)
 	}
-	if err = checksummer.Verify(c.AssetName(), zipFile); err != nil {
+	if err = checksummer.Verify(assetName, zipFile); err != nil {
 		return "", fmt.Errorf("Failed to verify checksums: %s", err)
 	}
 	log.Printf("[DEBUG] Matched checksum successfully")
 
 	if err = extractFileFromZipFile(zipFile, path); err != nil {
-		return "", fmt.Errorf("Failed to extract binary from %s: %s", c.AssetName(), err)
+		return "", fmt.Errorf("Failed to extract binary from %s: %s", assetName, err)
 	}
 
 	log.Printf("[DEBUG] Installed %s successfully", path)
