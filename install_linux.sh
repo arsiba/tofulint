@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-BINARY_NAME="tofulint-v0.0.2"
+BINARY_NAME="tofulint-v0.0.3"
 REPO="arsiba/tofulint"
 
 echo "===================================================="
