@@ -8,7 +8,7 @@ require (
 	github.com/agext/levenshtein v1.2.3
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/arsiba/tofulint-plugin-sdk v0.0.2
-	github.com/arsiba/tofulint-ruleset-opentofu v0.0.5
+	github.com/arsiba/tofulint-ruleset-opentofu v0.0.6
 	github.com/fatih/color v1.18.0
 	github.com/go-test/deep v1.1.1
 	github.com/google/go-cmp v0.7.0
