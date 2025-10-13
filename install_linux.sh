@@ -1,8 +1,6 @@
 #!/usr/bin/env bash
-
 set -euo pipefail
 
-BINARY_NAME="tofulint-${version}"
 REPO="arsiba/tofulint"
 
 echo "===================================================="
@@ -27,14 +25,19 @@ fi
 
 echo "Version: $version"
 
+BINARY_NAME="tofulint-${version}"
+
 echo "===================================================="
-echo "Downloading ${BINARY_NAME} $version ..."
+echo "Downloading ${BINARY_NAME} ..."
 
 download_path=$(mktemp -d -t tofulint.XXXXXXXXXX)
 download_executable="${download_path}/tofulint"
 
 curl --fail -sSL -o "${download_executable}" \
-  "https://github.com/${REPO}/releases/download/${version}/${BINARY_NAME}"
+  "https://github.com/${REPO}/releases/download/${version}/${BINARY_NAME}" || {
+    echo "Download failed. Check if ${BINARY_NAME} exists for release ${version}."
+    exit 1
+  }
 
 chmod +x "${download_executable}"
 
@@ -50,15 +53,15 @@ else
 fi
 
 $SUDO mkdir -p "$dest"
-$SUDO install -c -v "${download_executable}" "$dest"
+$SUDO install -c -v "${download_executable}" "$dest/tofulint"
 
 echo "===================================================="
 echo "Cleaning up ..."
 rm -rf "${download_path}"
 
 echo "===================================================="
-echo "${BINARY_NAME} has been installed to ${dest}"
+echo "tofulint has been installed to ${dest}"
 "${dest}/tofulint" -v || echo "Version could not be displayed"
 
 echo "===================================================="
-echo "Start by calling tofulint in your terminal"
+echo "Start by calling 'tofulint' in your terminal"
