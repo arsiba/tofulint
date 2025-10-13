@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 	"github.com/arsiba/tofulint/opentofu"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/gohcl"
@@ -13,8 +15,6 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
-	"github.com/arsiba/tofulint-plugin-sdk/hclext"
-	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 var defaultConfigFile = ".tflint.hcl"
@@ -140,7 +140,7 @@ func EmptyConfig() *Config {
 // For 1 and 2, if the file does not exist, an error will be returned immediately.
 // If 3 fails, fallback to 4, and If it fails, an empty configuration is returned.
 //
-// It also automatically enables bundled plugin if the "terraform"
+// It also automatically enables bundled plugin if the "opentofu"
 // plugin block is not explicitly declared.
 func LoadConfig(fs afero.Afero, file string) (*Config, error) {
 	// Load the file passed by the --config option
@@ -413,18 +413,20 @@ func (c *Config) enableBundledPlugin() *Config {
 		panic(diags)
 	}
 
-	if _, exists := c.Plugins["terraform"]; !exists {
-		log.Print(`[INFO] The "terraform" plugin block is not found. Enable the plugin "terraform" automatically`)
+	if _, exists := c.Plugins["opentofu"]; !exists {
+		log.Print(`[INFO] The "opentofu" plugin block is not found. Enable the plugin "opentofu" automatically`)
 
-		c.Plugins["terraform"] = &PluginConfig{
-			Name:    "terraform",
+		c.Plugins["opentofu"] = &PluginConfig{
+			Name:    "opentofu",
 			Enabled: true,
+			Version: "0.0.6",
+			Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 			Body:    f.Body,
 		}
 
 		// Implicit preset is ignored if you enable DisabledByDefault
 		if c.DisabledByDefault {
-			c.Plugins["terraform"].Body = nil
+			c.Plugins["opentofu"].Body = nil
 		}
 	}
 	return c

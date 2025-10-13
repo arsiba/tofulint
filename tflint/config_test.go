@@ -5,14 +5,14 @@ import (
 	"os"
 	"testing"
 
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 	"github.com/arsiba/tofulint/opentofu"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/spf13/afero"
-	"github.com/arsiba/tofulint-plugin-sdk/hclext"
-	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -117,9 +117,11 @@ plugin "baz" {
 						Name:    "baz",
 						Enabled: true,
 					},
-					"terraform": {
-						Name:    "terraform",
+					"opentofu": {
+						Name:    "opentofu",
 						Enabled: true,
+						Version: "0.0.6",
+						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
 			},
@@ -156,9 +158,11 @@ config {
 				DisabledByDefaultSet: true,
 				Rules:                map[string]*RuleConfig{},
 				Plugins: map[string]*PluginConfig{
-					"terraform": {
-						Name:    "terraform",
+					"opentofu": {
+						Name:    "opentofu",
 						Enabled: true,
+						Version: "0.0.6",
+						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
 			},
@@ -185,9 +189,11 @@ config {
 				DisabledByDefaultSet: true,
 				Rules:                map[string]*RuleConfig{},
 				Plugins: map[string]*PluginConfig{
-					"terraform": {
-						Name:    "terraform",
+					"opentofu": {
+						Name:    "opentofu",
 						Enabled: true,
+						Version: "0.0.6",
+						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
 			},
@@ -204,7 +210,7 @@ config {
 			file: "config.hcl",
 			files: map[string]string{
 				"config.hcl": `
-plugin "terraform" {
+plugin "opentofu" {
   enabled = false
 }`,
 			},
@@ -217,8 +223,8 @@ plugin "terraform" {
 				DisabledByDefault: false,
 				Rules:             map[string]*RuleConfig{},
 				Plugins: map[string]*PluginConfig{
-					"terraform": {
-						Name:    "terraform",
+					"opentofu": {
+						Name:    "opentofu",
 						Enabled: false,
 					},
 				},
@@ -367,9 +373,11 @@ plugin "foo" {
 						SourceOwner: "foo",
 						SourceRepo:  "bar",
 					},
-					"terraform": {
-						Name:    "terraform",
+					"opentofu": {
+						Name:    "opentofu",
 						Enabled: true,
+						Version: "0.0.6",
+						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
 			},
@@ -404,9 +412,11 @@ config {
 				DisabledByDefaultSet: true,
 				Rules:                map[string]*RuleConfig{},
 				Plugins: map[string]*PluginConfig{
-					"terraform": {
-						Name:    "terraform",
+					"opentofu": {
+						Name:    "opentofu",
 						Enabled: true,
+						Version: "0.0.6",
+						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
 			},
@@ -432,9 +442,11 @@ config {
 				DisabledByDefault: false,
 				Rules:             map[string]*RuleConfig{},
 				Plugins: map[string]*PluginConfig{
-					"terraform": {
-						Name:    "terraform",
+					"opentofu": {
+						Name:    "opentofu",
 						Enabled: true,
+						Version: "0.0.6",
+						Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
 					},
 				},
 			},
