@@ -58,7 +58,7 @@ rm -rf "${download_path}"
 
 echo "===================================================="
 echo "${BINARY_NAME} has been installed to ${dest}"
-"${dest}/${BINARY_NAME}" -v || echo "Version could not be displayed"
+"${dest}/tofulint" -v || echo "Version could not be displayed"
 
 echo "===================================================="
 echo "Start by calling tofulint in your terminal"
