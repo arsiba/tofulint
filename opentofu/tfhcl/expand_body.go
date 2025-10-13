@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 	"github.com/zclconf/go-cty/cty"
 )
 

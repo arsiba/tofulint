@@ -7,7 +7,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/hashicorp/hcl/v2/json"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 	"github.com/zclconf/go-cty/cty"
 )
 

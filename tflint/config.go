@@ -13,8 +13,8 @@ import (
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 var defaultConfigFile = ".tflint.hcl"
@@ -525,7 +525,7 @@ func (c *PluginConfig) Content(schema *hclext.BodySchema) (*hclext.BodyContent, 
 }
 
 // RuleSet is an interface to handle plugin's RuleSet.
-// The real impl is github.com/terraform-linters/tflint-plugin-sdk/plugin/host2plugin.GRPCClient.
+// The real impl is github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin.GRPCClient.
 type RuleSet interface {
 	RuleSetName() (string, error)
 	RuleSetVersion() (string, error)

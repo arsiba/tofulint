@@ -2,8 +2,8 @@ package main
 
 import (
 	"github.com/arsiba/tofulint/plugin/stub-generator/sources/testing/rules"
-	"github.com/terraform-linters/tflint-plugin-sdk/plugin"
-	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/arsiba/tofulint-plugin-sdk/plugin"
+	"github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 func main() {

@@ -11,8 +11,8 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 func TestLoadConfig(t *testing.T) {

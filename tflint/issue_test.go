@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	hcl "github.com/hashicorp/hcl/v2"
-	sdk "github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 func Test_NewSeverity(t *testing.T) {

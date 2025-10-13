@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/terraform-linters/tflint-plugin-sdk/terraform/lang/marks"
+	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
 	"github.com/zclconf/go-cty/cty"
 )
 

@@ -6,7 +6,7 @@
 package funcs
 
 import (
-	"github.com/terraform-linters/tflint-plugin-sdk/terraform/lang/marks"
+	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/function"
 )

@@ -3,7 +3,7 @@ package tfhcl
 import (
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/ext/dynblock"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 )
 
 // ExpandVariablesHCLExt is a wrapper around dynblock.WalkVariables that

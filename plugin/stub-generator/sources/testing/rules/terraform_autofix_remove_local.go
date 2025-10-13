@@ -2,7 +2,7 @@ package rules
 
 import (
 	"github.com/hashicorp/hcl/v2"
-	"github.com/terraform-linters/tflint-plugin-sdk/tflint"
+	"github.com/arsiba/tofulint-plugin-sdk/tflint"
 )
 
 // TerraformAutofixRemoveLocal checks whether ...

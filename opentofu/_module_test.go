@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/spf13/afero"
-	"github.com/terraform-linters/tflint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 )
 
 func TestRebuild(t *testing.T) {
