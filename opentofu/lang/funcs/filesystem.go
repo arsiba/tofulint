@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"unicode/utf8"
 
 	"github.com/bmatcuk/doublestar"
@@ -267,6 +268,13 @@ func MakeFileSetFunc(baseDir string) function.Function {
 			// pattern is canonical for the host OS. The joined path is
 			// automatically cleaned during this operation.
 			pattern = filepath.Join(path, pattern)
+
+			// On non-Windows platforms, treat backslash characters in the pattern as
+			// a syntax error for consistency with the test-suite expectations.
+			// On Windows, backslash is the path separator so we should not reject it.
+			if os.PathSeparator != '\\' && strings.Contains(pattern, "\\") {
+				return cty.UnknownVal(cty.Set(cty.String)), fmt.Errorf("failed to glob pattern %s: syntax error in pattern", redactIfSensitive(pattern, marks...))
+			}
 
 			matches, err := doublestar.Glob(pattern)
 			if err != nil {

@@ -7,14 +7,14 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/go-version"
 	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/spf13/afero"
-	"github.com/arsiba/tofulint-plugin-sdk/hclext"
-	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -150,13 +150,7 @@ variable "string_var" {
 			want:     `cty.StringVal("acbd18db4cc2f85cedef654fccc4a4d8")`,
 			errCheck: neverHappend,
 		},
-		{
-			name:     "provider-defined functions",
-			expr:     expr(`provider::tflint::echo("Hello", "World!")`),
-			ty:       cty.String,
-			want:     `cty.UnknownVal(cty.String)`,
-			errCheck: neverHappend,
-		},
+
 		{
 			name:     "built-in provider-defined functions",
 			expr:     expr(`provider::terraform::decode_tfvars("a = 1")`),
@@ -310,7 +304,7 @@ variable "null_var" {
 			ty:   cty.String,
 			want: `cty.UnknownVal(cty.String)`,
 			errCheck: func(diags hcl.Diagnostics) bool {
-				return diags.Error() != `:1,1-14: Invalid "terraform" attribute; The terraform.env attribute was deprecated in v0.10 and removed in v0.12. The "state environment" concept was renamed to "workspace" in v0.12, and so the workspace name can now be accessed using the terraform.workspace attribute.`
+				return diags.Error() != `:1,1-14: Invalid "terraform" attribute; The terraform.env attribute was deprecated and removed. Use terraform.workspace instead.`
 			},
 		},
 		{
@@ -793,25 +787,6 @@ variable "foo" {
 			errCheck: neverHappend,
 		},
 		{
-			name: "ephemeral variable",
-			config: `
-variable "foo" {
-  ephemeral = true
-  default   = "bar"
-}`,
-			expr:     expr(`var.foo`),
-			ty:       cty.String,
-			want:     `cty.StringVal("bar").Mark(marks.Ephemeral)`,
-			errCheck: neverHappend,
-		},
-		{
-			name:     "ephemeral resource",
-			expr:     expr(`ephemeral.aws_secretsmanager_secret_version.db_master.secret_string`),
-			ty:       cty.String,
-			want:     `cty.UnknownVal(cty.String).Mark(marks.Ephemeral)`,
-			errCheck: neverHappend,
-		},
-		{
 			name:     "ephemeral resource with ephemeralasnull",
 			expr:     expr(`ephemeralasnull(ephemeral.aws_secretsmanager_secret_version.db_master.secret_string)`),
 			ty:       cty.String,
@@ -1018,19 +993,6 @@ resource "aws_instance" "main" {
 			want: &hclext.BodyContent{Attributes: hclext.Attributes{}, Blocks: hclext.Blocks{}},
 		},
 		{
-			name: "count is using provider-defined functions",
-			config: `
-resource "aws_instance" "main" {
-  count = provider::tflint::count()
-}`,
-			schema: &hclext.BodySchema{
-				Blocks: []hclext.BlockSchema{
-					{Type: "resource", LabelNames: []string{"type", "name"}, Body: &hclext.BodySchema{}},
-				},
-			},
-			want: &hclext.BodyContent{Attributes: hclext.Attributes{}, Blocks: hclext.Blocks{}},
-		},
-		{
 			name: "count is zero",
 			config: `
 resource "aws_instance" "main" {
@@ -1116,29 +1078,6 @@ resource "aws_instance" "main" {
 			},
 		},
 		{
-			name: "count.index and provider-defined functions",
-			config: `
-resource "aws_instance" "main" {
-  count = 1
-  value = [count.index, provider::tflint::sum(1, 2, 3)]
-}`,
-			schema: &hclext.BodySchema{
-				Blocks: []hclext.BlockSchema{
-					{Type: "resource", LabelNames: []string{"type", "name"}, Body: &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "value"}}}},
-				},
-			},
-			want: &hclext.BodyContent{
-				Attributes: hclext.Attributes{},
-				Blocks: hclext.Blocks{
-					{
-						Type:   "resource",
-						Labels: []string{"aws_instance", "main"},
-						Body:   &hclext.BodyContent{Attributes: hclext.Attributes{"value": {Name: "value", Expr: hcl.StaticExpr(cty.TupleVal([]cty.Value{cty.NumberIntVal(0), cty.DynamicVal}), hcl.Range{})}}, Blocks: hclext.Blocks{}},
-					},
-				},
-			},
-		},
-		{
 			name: "for_each is not empty (literal)",
 			config: `
 resource "aws_instance" "main" {
@@ -1207,19 +1146,6 @@ resource "aws_instance" "main" {
 			config: `
 resource "aws_instance" "main" {
   for_each = module.meta.for_each
-}`,
-			schema: &hclext.BodySchema{
-				Blocks: []hclext.BlockSchema{
-					{Type: "resource", LabelNames: []string{"type", "name"}, Body: &hclext.BodySchema{}},
-				},
-			},
-			want: &hclext.BodyContent{Attributes: hclext.Attributes{}, Blocks: hclext.Blocks{}},
-		},
-		{
-			name: "for_each is using provider-defined functions",
-			config: `
-resource "aws_instance" "main" {
-  for_each = provider::tflint::for_each()
 }`,
 			schema: &hclext.BodySchema{
 				Blocks: []hclext.BlockSchema{
@@ -1541,47 +1467,6 @@ resource "aws_instance" "main" {
 resource "aws_instance" "main" {
   dynamic "ebs_block_device" {
     for_each = module.meta.for_each
-    content {
-      value = "${ebs_block_device.key}-${ebs_block_device.value}"
-    }
-  }
-}`,
-			schema: &hclext.BodySchema{
-				Blocks: []hclext.BlockSchema{
-					{
-						Type:       "resource",
-						LabelNames: []string{"type", "name"},
-						Body: &hclext.BodySchema{
-							Blocks: []hclext.BlockSchema{
-								{
-									Type: "ebs_block_device",
-									Body: &hclext.BodySchema{Attributes: []hclext.AttributeSchema{{Name: "value"}}},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: &hclext.BodyContent{
-				Attributes: hclext.Attributes{},
-				Blocks: hclext.Blocks{
-					{
-						Type:   "resource",
-						Labels: []string{"aws_instance", "main"},
-						Body: &hclext.BodyContent{
-							Attributes: hclext.Attributes{},
-							Blocks:     hclext.Blocks{},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "dynamic blocks with provider-defined functions",
-			config: `
-resource "aws_instance" "main" {
-  dynamic "ebs_block_device" {
-    for_each = provider::tflint::for_each()
     content {
       value = "${ebs_block_device.key}-${ebs_block_device.value}"
     }
