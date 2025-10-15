@@ -297,11 +297,11 @@ func Test_Discovery_bundledPluginWithVersion(t *testing.T) {
 
 	_, err = Discovery(&tflint.Config{
 		Plugins: map[string]*tflint.PluginConfig{
-			"terraform": {
-				Name:    "terraform",
+			"opentofu": {
+				Name:    "opentofu",
 				Enabled: true,
 				Source:  "github.com/arsiba/tofulint-ruleset-opentofu",
-				Version: "0.1.0",
+				Version: "0.0.7",
 			},
 		},
 	})
@@ -309,7 +309,7 @@ func Test_Discovery_bundledPluginWithVersion(t *testing.T) {
 	if err == nil {
 		t.Fatal("An error should have occurred, but it did not occur")
 	}
-	expected := `Plugin "terraform" not found. Did you run "tflint --init"?`
+	expected := `Plugin "opentofu" not found. Did you run "tflint --init"?`
 	if err.Error() != expected {
 		t.Fatalf("Error message not matched: want=%s, got=%s", expected, err.Error())
 	}
