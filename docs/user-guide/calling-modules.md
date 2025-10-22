@@ -12,7 +12,7 @@ module "aws_instance" {
 ```
 
 ```console
-$ tflint
+$ tofulint
 1 issue(s) found:
 
 Error: instance_type is not a valid value (aws_instance_invalid_type)
@@ -26,31 +26,16 @@ Callers:
 
 ```
 
-By default, TofuLint only calls local modules whose the `source` is a relative path like `./*`. If you want to call remote modules (registry, git, etc.), you must run `terraform init` (or `terraform get`) before invoking TofuLint so that modules are loaded into the `.terraform` directory. After that, invoke TofuLint with `--call-module-type=all`.
-
-```console
-$ terraform init
-$ tflint --call-module-type=all
-```
-
-The `--call-module-type` can also be set via configuration:
-
-```hcl
-config {
-  call_module_type = "all"
-}
-```
-
 If you don't want to call any modules, pass `--call-module-type=none`:
 
 ```console
-$ tflint --call-module-type=none
+$ tofulint --call-module-type=none
 ```
 
 If you want to ignore inspection for a particular module, you can use `--ignore-module`:
 
 ```console
-$ tflint --ignore-module=./module
+$ tofulint --ignore-module=./module
 ```
 
 ## Caveats

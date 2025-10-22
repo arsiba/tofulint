@@ -7,7 +7,7 @@ TofuLint can also act as a Language Server to integrate with various editors. Th
 This server can be started with the `--langserver` option:
 
 ```console
-$ tflint --langserver
+$ tofulint --langserver
 14:21:51 cli.go:185: Starting language server...
 ```
 
