@@ -1,7 +1,7 @@
 # TofuLint
 [![Build Status](https://github.com/arsiba/tofulint/workflows/build/badge.svg?branch=master)](https://github.com/arsiba/tofulint/actions)
 [![GitHub release](https://img.shields.io/github/release/arsiba/tofulint.svg)](https://github.com/arsiba/tofulint/releases/latest)
-[![Terraform Compatibility](https://img.shields.io/badge/terraform-%3E%3D%201.0-blue)](docs/user-guide/compatibility.md)
+[![Opentofu Compatibility](https://img.shields.io/badge/opentofu-%3E%3D%201.0-blue)](docs/user-guide/compatibility.md)
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-blue.svg)](LICENSE)
 [![Go Report Card](https://goreportcard.com/badge/github.com/arsiba/tofulint)](https://goreportcard.com/report/github.com/arsiba/tofulint)
 [![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://formulae.brew.sh/api/formula/tflint.json&query=$.versions.stable&label=homebrew)](https://formulae.brew.sh/formula/tflint)
@@ -38,15 +38,17 @@ A Docker-based installation will be available in a future release.
 ## Getting Started
 TofuLint comes bundled with a [Terraform language ruleset](https://github.com/arsiba/tofulint-ruleset-opentofu), enabling recommended rules by default.
 
-### Enabling the Terraform Plugin
-Declare the plugin block in your `.tflint.hcl`:
+### Enabling the Opentofu Plugin
+Declare the plugin block in your `.tflint.hcl` or `.tofulint.hcl`:
 
 ```hcl
-plugin "terraform" {
+plugin "opentofu" {
   enabled = true
-  preset  = "recommended"
+  version = "0.0.7"
+  source = "github.com/arsiba/tofulint-ruleset-opentofu"
 }
 ```
+> Even though tofulint currently comes with the opentofu plugin pre-packaged, it is still necessary to enable th plugin manually with the given plugin source. This is due to a bug in tofulint source code.
 
 More details: [TFLint Terraform Ruleset Configuration](https://github.com/arsiba/tofulint-ruleset-opentofu/blob/main/docs/configuration.md)
 
@@ -54,12 +56,28 @@ More details: [TFLint Terraform Ruleset Configuration](https://github.com/arsiba
 
 If you use a cloud provider, install the corresponding plugin:
 
-* [AWS](https://github.com/terraform-linters/tflint-ruleset-aws)
-* [Azure](https://github.com/terraform-linters/tflint-ruleset-azurerm)
-* [GCP](https://github.com/terraform-linters/tflint-ruleset-google)
+* [AWS](https://github.com/arsiba/tofulint-ruleset-aws)
+* [GCP](https://github.com/arsiba/tofulint-ruleset-google)
 
 Other plugins can be added via `.tflint.hcl` and installed with:
 
+```bash
+tofulint --init
+```
+
+### Write your own plugins
+To write your own plugins the syntax and workflow is the same as in `tflint`. This also enables to modify existing `tflint` plugins to work with tofulint. Therefor fork the wanted plugin, enable all github-actions via th github web interface, and replace all `terraform-linters/tflint-plugin-sdk` with `arsiba/tofulint-plugin-sdk`. Also replace all `terraform-linters/tofulint-plugin-<pluginName>` occurances with the new repository where the plugin is located now, as well as the version in `project/main.go`. 
+Commit and push the changes, create a new tag or empty release with the Syntax `vX.X.X` (best wopuld be to use the same Version as above) and the rest will be handled by the corresponsing actions.
+
+Use the plugin by including the following in your `.tofulint.hcl` / `.tflint.hcl` file:
+```hcl
+plugin "<pluginName>" {
+  enabled = true
+  version = "version (z.B. 0.0.7)"
+  source = "github.com/<owner>/tofulint-ruleset-<pluginName>"
+}
+```
+Install with 
 ```bash
 tofulint --init
 ```
@@ -82,7 +100,6 @@ plugin "foo" {
 For custom rules, create your own plugin or use Rego policies:
 
 * [Writing Plugins](docs/developer-guide/plugins.md)
-* [OPA Ruleset](https://github.com/terraform-linters/tflint-ruleset-opa)
 
 
 ## Usage
