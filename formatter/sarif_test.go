@@ -30,7 +30,7 @@ func Test_sarifPrint(t *testing.T) {
     {
       "tool": {
         "driver": {
-          "name": "tflint",
+          "name": "tofulint",
           "version": "%s",
           "informationUri": "https://github.com/arsiba/tofulint"
         }
@@ -70,7 +70,7 @@ func Test_sarifPrint(t *testing.T) {
     {
       "tool": {
         "driver": {
-          "name": "tflint",
+          "name": "tofulint",
           "version": "%s",
           "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
@@ -142,7 +142,7 @@ func Test_sarifPrint(t *testing.T) {
     {
       "tool": {
         "driver": {
-          "name": "tflint",
+          "name": "tofulint",
           "version": "%s",
           "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
@@ -214,7 +214,7 @@ func Test_sarifPrint(t *testing.T) {
     {
       "tool": {
         "driver": {
-          "name": "tflint",
+          "name": "tofulint",
           "version": "%s",
           "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
@@ -286,7 +286,7 @@ func Test_sarifPrint(t *testing.T) {
     {
       "tool": {
         "driver": {
-          "name": "tflint",
+          "name": "tofulint",
           "version": "%s",
           "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
@@ -357,7 +357,7 @@ func Test_sarifPrint(t *testing.T) {
     {
       "tool": {
         "driver": {
-          "name": "tflint",
+          "name": "tofulint",
           "version": "%s",
           "informationUri": "https://github.com/arsiba/tofulint",
           "rules": [
@@ -435,7 +435,7 @@ func Test_sarifPrint(t *testing.T) {
     {
       "tool": {
         "driver": {
-          "name": "tflint",
+          "name": "tofulint",
           "version": "%s",
           "informationUri": "https://github.com/arsiba/tofulint"
         }

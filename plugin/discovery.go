@@ -30,7 +30,7 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 		var cmd *exec.Cmd
 		if os.IsNotExist(err) {
 			if pluginCfg.Name == "opentofu" && installCfg.ManuallyInstalled() {
-				log.Print(`[INFO] Plugin "terraform" is not installed, but the bundled plugin is available.`)
+				log.Print(`[INFO] Plugin "opentofu" is not installed, but the bundled plugin is available.`)
 				self, err := os.Executable()
 				if err != nil {
 					return nil, err

@@ -19,8 +19,8 @@ import (
 
 var token = os.Getenv("GITHUB_TOKEN")
 var versionRegexp = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
-var goModRequireSDKRegexp = regexp.MustCompile(`github.com/arsiba/tofulint-plugin-sdk v(.+)`)
-var goModRequireBundledPluginRegexp = regexp.MustCompile(`github.com/arsiba/tofulint-ruleset-opentofu v(.+)`)
+var goModRequireSDKRegexp = regexp.MustCompile(`github\.com/arsiba/tofulint-plugin-sdk v(.+)`)
+var goModRequireBundledPluginRegexp = regexp.MustCompile(`github\.com/arsiba/tofulint-ruleset-opentofu v(.+)`)
 
 func main() {
 	currentVersion := getCurrentVersion()
@@ -210,8 +210,8 @@ func generateReleaseNote(old string, new string, savedPath string) error {
 
 	note, _, err := client.Repositories.GenerateReleaseNotes(
 		context.Background(),
-		"terraform-linters",
-		"tflint",
+		"arsiba",
+		"tofulint",
 		&github.GenerateNotesOptions{
 			TagName:         tagName,
 			PreviousTagName: &previousTagName,

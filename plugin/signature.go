@@ -26,7 +26,7 @@ func (c *SignatureChecker) GetSigningKey() string {
 	if c.config.SigningKey != "" {
 		return c.config.SigningKey
 	}
-	if c.config.SourceOwner == "terraform-linters" {
+	if c.config.SourceOwner == "arsiba" {
 		return builtinSigningKey
 	}
 	return c.config.SigningKey
