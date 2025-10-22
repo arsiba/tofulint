@@ -41,7 +41,7 @@ func TestIntegration(t *testing.T) {
 	}
 
 	cli.Run([]string{"./tflint"})
-	if !strings.Contains(errStream.String(), `Plugin "aws" not found. Did you run "tflint --init"?`) {
+	if !strings.Contains(errStream.String(), `Plugin "aws" not found. Did you run "tofulint --init"?`) {
 		t.Fatalf("Expected to contain an initialization error, but did not: stdout=%s, stderr=%s", outStream, errStream)
 	}
 

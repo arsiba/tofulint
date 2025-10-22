@@ -269,7 +269,7 @@ func Test_Discovery_notFoundForAutoInstallation(t *testing.T) {
 	if err == nil {
 		t.Fatal("An error should have occurred, but it did not occur")
 	}
-	expected := `Plugin "foo" not found. Did you run "tflint --init"?`
+	expected := `Plugin "foo" not found. Did you run "tofulint --init"?`
 	if err.Error() != expected {
 		t.Fatalf("Error message not matched: want=%s, got=%s", expected, err.Error())
 	}
@@ -309,7 +309,7 @@ func Test_Discovery_bundledPluginWithVersion(t *testing.T) {
 	if err == nil {
 		t.Fatal("An error should have occurred, but it did not occur")
 	}
-	expected := `Plugin "opentofu" not found. Did you run "tflint --init"?`
+	expected := `Plugin "opentofu" not found. Did you run "tofulint --init"?`
 	if err.Error() != expected {
 		t.Fatalf("Error message not matched: want=%s, got=%s", expected, err.Error())
 	}

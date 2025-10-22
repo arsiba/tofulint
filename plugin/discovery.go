@@ -44,7 +44,7 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 					}
 					return nil, fmt.Errorf(`Plugin "%s" not found in %s`, pluginCfg.Name, pluginDir)
 				}
-				return nil, fmt.Errorf(`Plugin "%s" not found. Did you run "tflint --init"?`, pluginCfg.Name)
+				return nil, fmt.Errorf(`Plugin "%s" not found. Did you run "tofulint --init"?`, pluginCfg.Name)
 			}
 		} else {
 			cmd = exec.Command(pluginPath)
