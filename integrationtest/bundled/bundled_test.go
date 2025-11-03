@@ -23,32 +23,32 @@ func TestIntegration(t *testing.T) {
 	}{
 		{
 			name:    "empty module",
-			command: "tflint --format json --force",
+			command: "tofulint --format json --force",
 			dir:     "empty",
 		},
 		{
 			name:    "basic",
-			command: "tflint --format json --force",
+			command: "tofulint --format json --force",
 			dir:     "basic",
 		},
 		{
 			name:    "disable bundled plugin",
-			command: "tflint --format json --force",
+			command: "tofulint --format json --force",
 			dir:     "disable",
 		},
 		{
 			name:    "with config",
-			command: "tflint --format json --force",
+			command: "tofulint --format json --force",
 			dir:     "with_config",
 		},
 		{
 			name:    "disabled_by_default",
-			command: "tflint --format json --force",
+			command: "tofulint --format json --force",
 			dir:     "disabled_by_default",
 		},
 		{
 			name:    "only",
-			command: "tflint --format json --force --only terraform_unused_declarations",
+			command: "tofulint --format json --force --only terraform_unused_declarations",
 			dir:     "only",
 		},
 	}
@@ -72,15 +72,16 @@ func TestIntegration(t *testing.T) {
 			args := strings.Split(test.command, " ")
 			var cmd *exec.Cmd
 			if runtime.GOOS == "windows" {
-				cmd = exec.Command("tflint.exe", args[1:]...)
+				cmd = exec.Command("tofulint.exe", args[1:]...)
 			} else {
-				cmd = exec.Command("tflint", args[1:]...)
+				cmd = exec.Command("tofulint", args[1:]...)
 			}
 			outStream, errStream := new(bytes.Buffer), new(bytes.Buffer)
 			cmd.Stdout = outStream
 			cmd.Stderr = errStream
-
 			if err := cmd.Run(); err != nil {
+				t.Logf("stdout:\n%s", outStream.String())
+				t.Logf("stderr:\n%s", errStream.String())
 				t.Fatalf("Failed to exec command: %s", err)
 			}
 
