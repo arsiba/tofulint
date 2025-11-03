@@ -1,4 +1,4 @@
-plugin "terraform" {
+plugin "opentofu" {
   enabled = true
 
   preset = "all"

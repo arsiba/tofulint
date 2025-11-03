@@ -1,3 +1,3 @@
-plugin "terraform" {
+plugin "opentofu" {
   enabled = false
 }
