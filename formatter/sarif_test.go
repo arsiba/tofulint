@@ -494,7 +494,7 @@ func Test_sarifPrint(t *testing.T) {
 				t.Fatalf("Failed %s test: %s", tc.Name, diff)
 			}
 
-			schemaLoader := gojsonschema.NewReferenceLoader("http://json.schemastore.org/sarif-2.1.0")
+			schemaLoader := gojsonschema.NewReferenceLoader("http://schemastore.org/sarif-2.1.0")
 			result, err := gojsonschema.Validate(schemaLoader, gojsonschema.NewStringLoader(stdout.String()))
 			if err != nil {
 				t.Error(err)
