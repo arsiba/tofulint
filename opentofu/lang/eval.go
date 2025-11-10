@@ -9,11 +9,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
 	"github.com/arsiba/tofulint/opentofu/addrs"
 	"github.com/arsiba/tofulint/opentofu/tfdiags"
 	"github.com/arsiba/tofulint/opentofu/tfhcl"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/arsiba/tofulint-plugin-sdk/hclext"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 )
@@ -28,7 +29,15 @@ func (s *Scope) ExpandBlock(body hcl.Body, schema *hclext.BodySchema) (hcl.Body,
 	traversals := tfhcl.ExpandVariablesHCLExt(body, schema)
 	refs, diags := References(traversals)
 
-	hclCtx, ctxDiags := s.EvalContext(refs)
+	expression := tfhcl.ExpandExpressionsHCLExt(body, schema)
+	functionCalls := []*FunctionCall{}
+	for _, expr := range expression {
+		calls, funcDiags := FunctionCallsInExpr(expr)
+		diags = diags.Extend(funcDiags)
+		functionCalls = append(functionCalls, calls...)
+	}
+
+	hclCtx, ctxDiags := s.EvalContext(refs, functionCalls)
 	diags = diags.Extend(ctxDiags)
 
 	return tfhcl.Expand(body, hclCtx), diags
@@ -46,8 +55,10 @@ func (s *Scope) ExpandBlock(body hcl.Body, schema *hclext.BodySchema) (hcl.Body,
 // incomplete, but will always be of the requested type.
 func (s *Scope) EvalExpr(expr hcl.Expression, wantType cty.Type) (cty.Value, hcl.Diagnostics) {
 	refs, diags := ReferencesInExpr(expr)
+	functionCalls, funcDiags := FunctionCallsInExpr(expr)
+	diags = diags.Extend(funcDiags)
 
-	ctx, ctxDiags := s.EvalContext(refs)
+	ctx, ctxDiags := s.EvalContext(refs, functionCalls)
 	diags = diags.Extend(ctxDiags)
 	if diags.HasErrors() {
 		// We'll stop early if we found problems in the references, because
@@ -83,11 +94,11 @@ func (s *Scope) EvalExpr(expr hcl.Expression, wantType cty.Type) (cty.Value, hcl
 // Most callers should prefer to use the evaluation helper methods that
 // this type offers, but this is here for less common situations where the
 // caller will handle the evaluation calls itself.
-func (s *Scope) EvalContext(refs []*addrs.Reference) (*hcl.EvalContext, hcl.Diagnostics) {
-	return s.evalContext(refs, s.SelfAddr)
+func (s *Scope) EvalContext(refs []*addrs.Reference, functionCalls []*FunctionCall) (*hcl.EvalContext, hcl.Diagnostics) {
+	return s.evalContext(refs, s.SelfAddr, functionCalls)
 }
 
-func (s *Scope) evalContext(refs []*addrs.Reference, selfAddr addrs.Referenceable) (*hcl.EvalContext, hcl.Diagnostics) {
+func (s *Scope) evalContext(refs []*addrs.Reference, selfAddr addrs.Referenceable, functionCalls []*FunctionCall) (*hcl.EvalContext, hcl.Diagnostics) {
 	if s == nil {
 		panic("attempt to construct EvalContext for nil Scope")
 	}
@@ -95,6 +106,21 @@ func (s *Scope) evalContext(refs []*addrs.Reference, selfAddr addrs.Referenceabl
 	var diags hcl.Diagnostics
 	vals := make(map[string]cty.Value)
 	funcs := s.Functions()
+	// Provider-defined functions introduced in Terraform v1.8 cannot be
+	// evaluated statically in many cases. Here, we avoid the error by dynamically
+	// generating an evaluation context in which the provider-defined functions
+	// in the given expression are replaced with mock functions.
+	for _, call := range functionCalls {
+		if !call.IsProviderDefined() {
+			continue
+		}
+		// Some provider-defined functions are supported,
+		// so only generate mocks for undefined functions
+		if _, exists := funcs[call.Name]; !exists {
+			funcs[call.Name] = NewMockFunction(call)
+		}
+	}
+
 	ctx := &hcl.EvalContext{
 		Variables: vals,
 		Functions: funcs,
@@ -191,6 +217,7 @@ func (s *Scope) evalContext(refs []*addrs.Reference, selfAddr addrs.Referenceabl
 
 	// The following are unknown values as they are not supported by TofuLint.
 	vals["resource"] = cty.UnknownVal(cty.DynamicPseudoType)
+	vals["ephemeral"] = cty.UnknownVal(cty.DynamicPseudoType).Mark(marks.Ephemeral)
 	vals["data"] = cty.UnknownVal(cty.DynamicPseudoType)
 	vals["module"] = cty.UnknownVal(cty.DynamicPseudoType)
 	vals["self"] = cty.UnknownVal(cty.DynamicPseudoType)

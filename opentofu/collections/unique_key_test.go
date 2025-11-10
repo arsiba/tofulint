@@ -1,17 +1,19 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: BUSL-1.1
-
 package collections
 
-type testingKey string
+// testKey is a string type that can serve as its own unique key
+// since strings are inherently comparable in Go.
+type testKey string
 
-// testingKey is its own UniqueKey, because it's already a comparable type
-var _ UniqueKey[testingKey] = testingKey("")
-var _ UniqueKeyer[testingKey] = testingKey("")
+// Ensure that testKey implements both UniqueKey and UniqueKeyer.
+var (
+	_ UniqueKey[testKey]   = testKey("")
+	_ UniqueKeyer[testKey] = testKey("")
+)
 
-func (k testingKey) IsUniqueKey(testingKey) {}
+// IsUniqueKey is a no-op marker method that satisfies the UniqueKey interface.
+func (k testKey) IsUniqueKey(testKey) {}
 
-// UniqueKey implements UniqueKeyer.
-func (k testingKey) UniqueKey() UniqueKey[testingKey] {
-	return UniqueKey[testingKey](k)
+// UniqueKey implements the UniqueKeyer interface and returns the key itself.
+func (k testKey) UniqueKey() UniqueKey[testKey] {
+	return UniqueKey[testKey](k)
 }

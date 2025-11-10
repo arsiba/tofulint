@@ -1,6 +1,3 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: BUSL-1.1
-
 package terraform
 
 import (
@@ -88,41 +85,41 @@ two   = 2
 		},
 		{
 			Input:   cty.NullVal(cty.EmptyObject),
-			WantErr: `cannot encode a null value in tfvars syntax`,
+			WantErr: `cannot encode null value as tfvars`,
 		},
 		{
 			Input:   cty.NullVal(cty.Map(cty.String)),
-			WantErr: `cannot encode a null value in tfvars syntax`,
+			WantErr: `cannot encode null value as tfvars`,
 		},
 		{
 			Input:   cty.StringVal("nope"),
-			WantErr: `invalid value to encode: must be an object whose attribute names will become the encoded variable names`,
+			WantErr: `expected an object or map for tfvars encoding`,
 		},
 		{
 			Input:   cty.Zero,
-			WantErr: `invalid value to encode: must be an object whose attribute names will become the encoded variable names`,
+			WantErr: `expected an object or map for tfvars encoding`,
 		},
 		{
 			Input:   cty.False,
-			WantErr: `invalid value to encode: must be an object whose attribute names will become the encoded variable names`,
+			WantErr: `expected an object or map for tfvars encoding`,
 		},
 		{
 			Input:   cty.ListValEmpty(cty.String),
-			WantErr: `invalid value to encode: must be an object whose attribute names will become the encoded variable names`,
+			WantErr: `expected an object or map for tfvars encoding`,
 		},
 		{
 			Input:   cty.SetValEmpty(cty.String),
-			WantErr: `invalid value to encode: must be an object whose attribute names will become the encoded variable names`,
+			WantErr: `expected an object or map for tfvars encoding`,
 		},
 		{
 			Input:   cty.EmptyTupleVal,
-			WantErr: `invalid value to encode: must be an object whose attribute names will become the encoded variable names`,
+			WantErr: `expected an object or map for tfvars encoding`,
 		},
 		{
 			Input: cty.ObjectVal(map[string]cty.Value{
 				"not valid identifier": cty.StringVal("!"),
 			}),
-			WantErr: `invalid variable name "not valid identifier": must be a valid identifier, per Terraform's rules for input variable declarations`,
+			WantErr: `invalid variable name "not valid identifier": must be a valid identifier`,
 		},
 	}
 
@@ -179,19 +176,19 @@ number = 2`),
 			// This is actually not a very good diagnosis for this error,
 			// since we're expecting HCL arguments rather than HCL blocks,
 			// but that's something we'd need to address in HCL.
-			WantErr: `invalid tfvars syntax: <decode_tfvars argument>:1,17-17: Invalid block definition; Either a quoted string block label or an opening brace ("{") is expected here.`,
+			WantErr: `invalid tfvars syntax: <tfvars>:1,17-17: Invalid block definition; Either a quoted string block label or an opening brace ("{") is expected here.`,
 		},
 		{
 			Input:   cty.StringVal(`foo = not valid syntax`),
-			WantErr: `invalid tfvars syntax: <decode_tfvars argument>:1,11-16: Missing newline after argument; An argument definition must end with a newline.`,
+			WantErr: `invalid tfvars syntax: <tfvars>:1,11-16: Missing newline after argument; An argument definition must end with a newline.`,
 		},
 		{
 			Input:   cty.StringVal(`foo = var.whatever`),
-			WantErr: `invalid expression for variable "foo": <decode_tfvars argument>:1,7-10: Variables not allowed; Variables may not be used here.`,
+			WantErr: `invalid expression for variable "foo": <tfvars>:1,7-10: Variables not allowed; Variables may not be used here.`,
 		},
 		{
 			Input:   cty.StringVal(`foo = whatever()`),
-			WantErr: `invalid expression for variable "foo": <decode_tfvars argument>:1,7-17: Function calls not allowed; Functions may not be called here.`,
+			WantErr: `invalid expression for variable "foo": <tfvars>:1,7-17: Function calls not allowed; Functions may not be called here.`,
 		},
 	}
 

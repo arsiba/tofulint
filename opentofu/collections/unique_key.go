@@ -1,57 +1,42 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: BUSL-1.1
+// This module defines the types and interfaces for unique keys,
+// which can be used in generic sets or maps.
 
 package collections
 
-// UniqueKey represents a value that is comparable and uniquely identifies
-// another value of type T.
+// UniqueKey describes a comparable value that uniquely identifies another element
+// of type T.
 //
-// The Go type system offers no way to guarantee at compile time that
-// implementations of this type are comparable, but if this interface is
-// implemented by an uncomparable type then that will cause runtime panics
-// when inserting elements into collection types that use unique keys.
+// The Go type checker cannot enforce that this type is actually comparable;
+// if a non-comparable type is used, it will cause a runtime panic.
 //
-// We use this to help with correctness of the unique-key-generator callbacks
-// used with the collection types in this package, so help with type parameter
-// inference and to raise compile-time errors if an inappropriate callback
-// is used as the key generator for a particular collection.
+// This interface serves as a marker to type-safely define unique keys for
+// collections (e.g., sets or maps).
 type UniqueKey[T any] interface {
-	// Implementations must include an IsUniqueKey method with an empty body
-	// just as a compile-time assertion that they are intended to behave as
-	// unique keys for a particular other type.
-	//
-	// This method is never actually called by the collection types. Other
-	// callers could potentially call it, but it would be strange and pointless
-	// to do so.
+	// IsUniqueKey is never called; it only serves to mark the type
+	// as a unique key for T.
 	IsUniqueKey(T)
 }
 
-// A UniqueKeyer is a type that knows how to calculate a unique key itself.
+// UniqueKeyer is a type that can produce its own unique key.
+//
+// A correct implementation must return a different key for each distinct object of T.
+// What "unique" means depends on the semantics of the type.
 type UniqueKeyer[T any] interface {
-	// UniqueKey returns the unique key of the receiver.
-	//
-	// A correct implementation of UniqueKey must return a distinct value
-	// for each unique value of T, where the uniqueness of T values is decided
-	// by the implementer. See [UniqueKey] for more information.
-	//
-	// Although not enforced directly by the Go type system, it doesn't make
-	// sense for a type to implement [UniqueKeyer] for any type other than
-	// itself. Such a nonsensical implementation will not be accepted by
-	// functions like [NewSet] and [NewMap].
+	// UniqueKey returns the unique key of the object.
 	UniqueKey() UniqueKey[T]
 }
 
-// cmpUniqueKey is an annoying little adapter used to make arbitrary
-// comparable types usable with [Set] and [Map].
+// comparableKey is a helper type that allows any comparable type
+// to be used as a unique key in sets or maps.
 //
-// It just wraps a single-element array of T around the value, so it
-// remains exactly as comparable as T. However, it does unfortunately
-// mean redundantly storing T twice -- both as the unique key and the
-// value -- in our collections.
-type cmpUniqueKey[T comparable] [1]T
+// Internally, the value is stored in a single-element array to ensure
+// that the type remains comparable with ==.
+type comparableKey[T comparable] [1]T
 
-func (cmpUniqueKey[T]) IsUniqueKey(T) {}
+// IsUniqueKey fulfills the UniqueKey interface without providing functionality.
+func (comparableKey[T]) IsUniqueKey(T) {}
 
-func cmpUniqueKeyFunc[T comparable](v T) UniqueKey[T] {
-	return cmpUniqueKey[T]{v}
+// comparableKeyFunc creates a UniqueKey instance from a comparable value.
+func comparableKeyFunc[T comparable](v T) UniqueKey[T] {
+	return comparableKey[T]{v}
 }
