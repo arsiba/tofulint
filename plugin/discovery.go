@@ -10,10 +10,10 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin"
 	"github.com/arsiba/tofulint/tflint"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/mitchellh/go-homedir"
-	"github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin"
 )
 
 // Discovery searches and launches plugins according the passed configuration.
@@ -29,8 +29,8 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 		pluginPath, err := FindPluginPath(installCfg)
 		var cmd *exec.Cmd
 		if os.IsNotExist(err) {
-			if pluginCfg.Name == "terraform" && installCfg.ManuallyInstalled() {
-				log.Print(`[INFO] Plugin "terraform" is not installed, but the bundled plugin is available.`)
+			if pluginCfg.Name == "opentofu" && installCfg.ManuallyInstalled() {
+				log.Print(`[INFO] Plugin "opentofu" is not installed, but the bundled plugin is available.`)
 				self, err := os.Executable()
 				if err != nil {
 					return nil, err
@@ -44,7 +44,7 @@ func Discovery(config *tflint.Config) (*Plugin, error) {
 					}
 					return nil, fmt.Errorf(`Plugin "%s" not found in %s`, pluginCfg.Name, pluginDir)
 				}
-				return nil, fmt.Errorf(`Plugin "%s" not found. Did you run "tflint --init"?`, pluginCfg.Name)
+				return nil, fmt.Errorf(`Plugin "%s" not found. Did you run "tofulint --init"?`, pluginCfg.Name)
 			}
 		} else {
 			cmd = exec.Command(pluginPath)

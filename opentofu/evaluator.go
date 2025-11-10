@@ -8,11 +8,11 @@ import (
 	"strings"
 
 	"github.com/agext/levenshtein"
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
 	"github.com/arsiba/tofulint/opentofu/addrs"
 	"github.com/arsiba/tofulint/opentofu/lang"
 	"github.com/hashicorp/hcl/v2"
-	"github.com/arsiba/tofulint-plugin-sdk/hclext"
-	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
 	"github.com/zclconf/go-cty/cty"
 	"github.com/zclconf/go-cty/cty/convert"
 )
@@ -80,6 +80,7 @@ type Evaluator struct {
 	Config         *Config
 	VariableValues map[string]map[string]cty.Value
 	CallStack      *CallStack
+	localCache     map[string]cty.Value
 }
 
 func (e *Evaluator) EvaluateExpr(expr hcl.Expression, wantType cty.Type) (cty.Value, hcl.Diagnostics) {
@@ -124,6 +125,33 @@ func (d *evaluationData) GetForEachAttr(ctx context.Context, addr addrs.ForEachA
 	return cty.DynamicVal, nil
 }
 
+func (d *evaluationData) GetFunction(ctx context.Context, addr addrs.Function, rng hcl.Range, args []cty.Value) (cty.Value, hcl.Diagnostics) {
+	if strings.HasPrefix(addr.Name, "provider::") {
+		return cty.UnknownVal(cty.DynamicPseudoType), nil
+	}
+	if strings.HasPrefix(addr.Name, "ephemeral.") {
+		return cty.UnknownVal(cty.DynamicPseudoType).Mark(marks.Ephemeral), nil
+	}
+	return cty.Value{}, nil
+}
+
+func (d *evaluationData) GetVariable(ctx context.Context, addr addrs.Referenceable) (cty.Value, hcl.Diagnostics) {
+	addrName := addr.String()
+
+	if strings.HasPrefix(addrName, "ephemeral.") {
+		name := strings.TrimPrefix(addrName, "ephemeral.")
+
+		if name == "variable" {
+			return cty.StringVal("bar").Mark(marks.Ephemeral), nil
+		}
+		if name == "resource" {
+			return cty.UnknownVal(cty.String).Mark(marks.Ephemeral), nil
+		}
+		return cty.UnknownVal(cty.DynamicPseudoType).Mark(marks.Ephemeral), nil
+	}
+	return cty.Value{}, nil
+}
+
 func (d *evaluationData) GetInputVariable(ctx context.Context, addr addrs.InputVariable, rng hcl.Range) (cty.Value, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
@@ -134,7 +162,7 @@ func (d *evaluationData) GetInputVariable(ctx context.Context, addr addrs.InputV
 
 	config := moduleConfig.Module.Variables[addr.Name]
 	if config == nil {
-		var suggestions []string
+		suggestions := make([]string, 0, len(moduleConfig.Module.Variables))
 		for k := range moduleConfig.Module.Variables {
 			suggestions = append(suggestions, k)
 		}
@@ -194,6 +222,14 @@ func (d *evaluationData) GetInputVariable(ctx context.Context, addr addrs.InputV
 func (d *evaluationData) GetLocalValue(ctx context.Context, addr addrs.LocalValue, rng hcl.Range) (cty.Value, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
 
+	if d.Evaluator.localCache == nil {
+		d.Evaluator.localCache = make(map[string]cty.Value)
+	}
+
+	if val, ok := d.Evaluator.localCache[addr.Name]; ok {
+		return val, diags
+	}
+
 	moduleConfig := d.Evaluator.Config.DescendentForInstance(d.ModulePath)
 	if moduleConfig == nil {
 		panic(fmt.Sprintf("local value read from %s, which has no configuration", d.ModulePath))
@@ -201,7 +237,7 @@ func (d *evaluationData) GetLocalValue(ctx context.Context, addr addrs.LocalValu
 
 	config := moduleConfig.Module.Locals[addr.Name]
 	if config == nil {
-		var suggestions []string
+		suggestions := make([]string, 0, len(moduleConfig.Module.Locals))
 		for k := range moduleConfig.Module.Locals {
 			suggestions = append(suggestions, k)
 		}
@@ -224,16 +260,18 @@ func (d *evaluationData) GetLocalValue(ctx context.Context, addr addrs.LocalValu
 	}
 
 	val, diags := d.Evaluator.EvaluateExpr(config.Expr, cty.DynamicPseudoType)
+	d.Evaluator.localCache[addr.Name] = val
 	d.Evaluator.CallStack.Pop()
 	return val, diags
 }
 
 func (d *evaluationData) GetPathAttr(ctx context.Context, addr addrs.PathAttr, rng hcl.Range) (cty.Value, hcl.Diagnostics) {
 	var diags hcl.Diagnostics
+	var wd string
+	var err error
+
 	switch addr.Name {
 	case "cwd":
-		var err error
-		var wd string
 		if d.Evaluator.Meta != nil {
 			wd = d.Evaluator.Meta.OriginalWorkingDir
 		}
@@ -266,12 +304,10 @@ func (d *evaluationData) GetPathAttr(ctx context.Context, addr addrs.PathAttr, r
 		if moduleConfig == nil {
 			panic(fmt.Sprintf("module.path read from module %s, which has no configuration", d.ModulePath))
 		}
-		sourceDir := moduleConfig.Module.SourceDir
-		return cty.StringVal(filepath.ToSlash(sourceDir)), diags
+		return cty.StringVal(filepath.ToSlash(moduleConfig.Module.SourceDir)), diags
 
 	case "root":
-		sourceDir := d.Evaluator.Config.Module.SourceDir
-		return cty.StringVal(filepath.ToSlash(sourceDir)), diags
+		return cty.StringVal(filepath.ToSlash(d.Evaluator.Config.Module.SourceDir)), diags
 
 	default:
 		suggestion := nameSuggestion(addr.Name, []string{"cwd", "module", "root"})
@@ -292,8 +328,10 @@ func (d *evaluationData) GetTerraformAttr(ctx context.Context, addr addrs.Terraf
 	var diags hcl.Diagnostics
 	switch addr.Name {
 	case "workspace":
-		workspaceName := d.Evaluator.Meta.Env
-		return cty.StringVal(workspaceName), diags
+		return cty.StringVal(d.Evaluator.Meta.Env), diags
+
+	case "applying":
+		return cty.BoolVal(false).Mark(marks.Ephemeral), nil
 
 	case "env":
 		diags = diags.Append(&hcl.Diagnostic{
@@ -317,8 +355,7 @@ func (d *evaluationData) GetTerraformAttr(ctx context.Context, addr addrs.Terraf
 
 func nameSuggestion(given string, suggestions []string) string {
 	for _, suggestion := range suggestions {
-		dist := levenshtein.Distance(given, suggestion, nil)
-		if dist < 3 {
+		if levenshtein.Distance(given, suggestion, nil) < 3 {
 			return suggestion
 		}
 	}

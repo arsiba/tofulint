@@ -1,9 +1,9 @@
 package plugin
 
 import (
+	"github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin"
 	plugin "github.com/hashicorp/go-plugin"
 	"github.com/hashicorp/go-version"
-	"github.com/arsiba/tofulint-plugin-sdk/plugin/host2plugin"
 )
 
 // PluginRoot is the root directory of the plugins
@@ -14,7 +14,7 @@ var (
 )
 
 // SDKVersionConstraints is the version constraint of the supported SDK version.
-var SDKVersionConstraints = version.MustConstraints(version.NewConstraint(">= 0.14.0"))
+var SDKVersionConstraints = version.MustConstraints(version.NewConstraint(">= 0.0.7"))
 
 // Plugin is an object handling plugins
 // Basically, it is a wrapper for go-plugin and provides an API to handle them collectively.

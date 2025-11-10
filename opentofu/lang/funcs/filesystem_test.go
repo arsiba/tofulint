@@ -15,8 +15,8 @@ import (
 	"github.com/zclconf/go-cty/cty/function"
 	"github.com/zclconf/go-cty/cty/function/stdlib"
 
-	"github.com/arsiba/tofulint/opentofu/collections"
 	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
+	"github.com/arsiba/tofulint/opentofu/collections"
 )
 
 func TestFile(t *testing.T) {

@@ -7,7 +7,7 @@ $ git clone https://github.com/terraform-linters/tflint.git
 $ cd tflint
 $ make
 mkdir -p dist
-go build -v -o dist/tflint
+go build -v -o dist/tofulint
 ```
 
 ## Run tests

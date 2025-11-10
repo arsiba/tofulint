@@ -14,8 +14,9 @@ func (cli *CLI) actAsBundledPlugin() int {
 	plugin.Serve(&plugin.ServeOpts{
 		RuleSet: &terraform.RuleSet{
 			BuiltinRuleSet: tflint.BuiltinRuleSet{
-				Name:    "opentofu",
-				Version: fmt.Sprintf("%s-bundled", project.Version),
+				Name:       "opentofu",
+				Version:    fmt.Sprintf("%s-bundled", project.Version),
+				Constraint: ">= 0.0.1",
 			},
 			PresetRules: rules.PresetRules,
 		},

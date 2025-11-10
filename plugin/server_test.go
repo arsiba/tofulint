@@ -6,6 +6,10 @@ import (
 	"os"
 	"testing"
 
+	"github.com/arsiba/tofulint-plugin-sdk/hclext"
+	"github.com/arsiba/tofulint-plugin-sdk/plugin"
+	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
+	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 	"github.com/arsiba/tofulint/tflint"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
@@ -13,10 +17,6 @@ import (
 	hcl "github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclsyntax"
 	"github.com/spf13/afero"
-	"github.com/arsiba/tofulint-plugin-sdk/hclext"
-	"github.com/arsiba/tofulint-plugin-sdk/plugin"
-	"github.com/arsiba/tofulint-plugin-sdk/terraform/lang/marks"
-	sdk "github.com/arsiba/tofulint-plugin-sdk/tflint"
 	"github.com/zclconf/go-cty/cty"
 )
 
@@ -768,7 +768,7 @@ resource "aws_instance" "foo" {
 
 			got := server.GetFiles(sdk.SelfModuleCtxType)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf(diff)
+				t.Errorf("diff: %s", diff)
 			}
 		})
 	}

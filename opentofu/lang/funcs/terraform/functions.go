@@ -1,6 +1,4 @@
-// Copyright (c) HashiCorp, Inc.
-// SPDX-License-Identifier: BUSL-1.1
-
+// This file defines helper functions for encoding and decoding Terraform// variable files (tfvars) and HCL expressions.
 package terraform
 
 import (
@@ -15,6 +13,7 @@ import (
 	"github.com/zclconf/go-cty/cty/function"
 )
 
+// EncodeTfvarsFunc converts a cty value into a Terraform .tfvars formatted string.
 var EncodeTfvarsFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -22,72 +21,58 @@ var EncodeTfvarsFunc = function.New(&function.Spec{
 			Type:             cty.DynamicPseudoType,
 			AllowNull:        true,
 			AllowDynamicType: true,
-			AllowUnknown:     true, // to perform refinements
+			AllowUnknown:     true,
 		},
 	},
 	Type: function.StaticReturnType(cty.String),
-	Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-		// These error checks should not be hit in practice because the language
-		// runtime should check them before calling, so this is just for robustness
-		// and completeness.
-		if len(args) > 1 {
-			return cty.NilVal, function.NewArgErrorf(1, "too many arguments; only one expected")
-		}
-		if len(args) == 0 {
+	Impl: func(args []cty.Value, _ cty.Type) (cty.Value, error) {
+		// Validate argument count and type.
+		if len(args) != 1 {
 			return cty.NilVal, fmt.Errorf("exactly one argument is required")
 		}
-
 		v := args[0]
-		ty := v.Type()
+		t := v.Type()
 
 		if v.IsNull() {
-			// Our functions schema does not say we allow null values, so we should
-			// not get to this error message if the caller respects the schema.
-			return cty.NilVal, function.NewArgErrorf(1, "cannot encode a null value in tfvars syntax")
+			return cty.NilVal, function.NewArgErrorf(1, "cannot encode null value as tfvars")
 		}
 		if !v.IsWhollyKnown() {
 			return cty.UnknownVal(cty.String).RefineNotNull(), nil
 		}
 
+		// Collect map or object keys to ensure deterministic ordering.
 		var keys []string
 		switch {
-		case ty.IsObjectType():
-			atys := ty.AttributeTypes()
-			keys = make([]string, 0, len(atys))
-			for key := range atys {
-				keys = append(keys, key)
+		case t.IsObjectType():
+			for k := range t.AttributeTypes() {
+				keys = append(keys, k)
 			}
-		case ty.IsMapType():
-			keys = make([]string, 0, v.LengthInt())
+		case t.IsMapType():
 			for it := v.ElementIterator(); it.Next(); {
 				k, _ := it.Element()
 				keys = append(keys, k.AsString())
 			}
 		default:
-			return cty.NilVal, function.NewArgErrorf(1, "invalid value to encode: must be an object whose attribute names will become the encoded variable names")
+			return cty.NilVal, function.NewArgErrorf(1, "expected an object or map for tfvars encoding")
 		}
 		sort.Strings(keys)
 
 		f := hclwrite.NewEmptyFile()
 		body := f.Body()
-		for _, key := range keys {
-			if !hclsyntax.ValidIdentifier(key) {
-				// We can only encode valid identifiers as tfvars keys, since
-				// the HCL argument grammar requires them to be identifiers.
-				return cty.NilVal, function.NewArgErrorf(1, "invalid variable name %q: must be a valid identifier, per Terraform's rules for input variable declarations", key)
-			}
 
-			// This index should not fail because we know that "key" is a valid
-			// index from the logic above.
-			v, _ := hcl.Index(v, cty.StringVal(key), nil)
-			body.SetAttributeValue(key, v)
+		for _, k := range keys {
+			if !hclsyntax.ValidIdentifier(k) {
+				return cty.NilVal, function.NewArgErrorf(1, "invalid variable name %q: must be a valid identifier", k)
+			}
+			val, _ := hcl.Index(v, cty.StringVal(k), nil)
+			body.SetAttributeValue(k, val)
 		}
 
-		result := f.Bytes()
-		return cty.StringVal(string(result)), nil
+		return cty.StringVal(string(f.Bytes())), nil
 	},
 })
 
+// DecodeTfvarsFunc parses a tfvars-formatted string and returns its cty object representation.
 var DecodeTfvarsFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -97,64 +82,46 @@ var DecodeTfvarsFunc = function.New(&function.Spec{
 		},
 	},
 	Type: function.StaticReturnType(cty.DynamicPseudoType),
-	Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-		// These error checks should not be hit in practice because the language
-		// runtime should check them before calling, so this is just for robustness
-		// and completeness.
-		if len(args) > 1 {
-			return cty.NilVal, function.NewArgErrorf(1, "too many arguments; only one expected")
-		}
-		if len(args) == 0 {
+	Impl: func(args []cty.Value, _ cty.Type) (cty.Value, error) {
+		// Validate argument count and type.
+		if len(args) != 1 {
 			return cty.NilVal, fmt.Errorf("exactly one argument is required")
 		}
-		if args[0].Type() != cty.String {
+		arg := args[0]
+		if arg.Type() != cty.String {
 			return cty.NilVal, fmt.Errorf("argument must be a string")
 		}
-		if args[0].IsNull() {
+		if arg.IsNull() {
 			return cty.NilVal, fmt.Errorf("cannot decode tfvars from a null value")
 		}
-		if !args[0].IsKnown() {
-			// If our input isn't known then we can't even predict the result
-			// type, since it will be an object type decided based on which
-			// arguments and values we find in the string.
+		if !arg.IsKnown() {
 			return cty.DynamicVal, nil
 		}
 
-		// If we get here then we know that:
-		// - there's exactly one element in args
-		// - it's a string
-		// - it is known and non-null
-		// So therefore the following is guaranteed to succeed.
-		src := []byte(args[0].AsString())
+		src := []byte(arg.AsString())
+		file, diags := hclsyntax.ParseConfig(src, "<tfvars>", hcl.InitialPos)
+		if diags.HasErrors() {
+			return cty.NilVal, fmt.Errorf("invalid tfvars syntax: %s", diags.Error())
+		}
 
-		// As usual when we wrap HCL stuff up in functions, we end up needing to
-		// stuff HCL diagnostics into plain string error messages. This produces
-		// a non-ideal result but is still better than hiding the HCL-provided
-		// diagnosis altogether.
-		f, hclDiags := hclsyntax.ParseConfig(src, "<decode_tfvars argument>", hcl.InitialPos)
-		if hclDiags.HasErrors() {
-			return cty.NilVal, fmt.Errorf("invalid tfvars syntax: %s", hclDiags.Error())
+		attrs, diags := file.Body.JustAttributes()
+		if diags.HasErrors() {
+			return cty.NilVal, fmt.Errorf("invalid tfvars content: %s", diags.Error())
 		}
-		attrs, hclDiags := f.Body.JustAttributes()
-		if hclDiags.HasErrors() {
-			return cty.NilVal, fmt.Errorf("invalid tfvars content: %s", hclDiags.Error())
-		}
-		retAttrs := make(map[string]cty.Value, len(attrs))
+
+		out := make(map[string]cty.Value, len(attrs))
 		for name, attr := range attrs {
-			// Evaluating the expression with no EvalContext achieves the same
-			// interpretation as Terraform CLI makes of .tfvars files, rejecting
-			// any function calls or references to symbols.
-			v, hclDiags := attr.Expr.Value(nil)
-			if hclDiags.HasErrors() {
-				return cty.NilVal, fmt.Errorf("invalid expression for variable %q: %s", name, hclDiags.Error())
+			val, diags := attr.Expr.Value(nil)
+			if diags.HasErrors() {
+				return cty.NilVal, fmt.Errorf("invalid expression for variable %q: %s", name, diags.Error())
 			}
-			retAttrs[name] = v
+			out[name] = val
 		}
-
-		return cty.ObjectVal(retAttrs), nil
+		return cty.ObjectVal(out), nil
 	},
 })
 
+// EncodeExprFunc converts a cty value into its canonical HCL expression string.
 var EncodeExprFunc = function.New(&function.Spec{
 	Params: []function.Parameter{
 		{
@@ -162,29 +129,22 @@ var EncodeExprFunc = function.New(&function.Spec{
 			Type:             cty.DynamicPseudoType,
 			AllowNull:        true,
 			AllowDynamicType: true,
-			AllowUnknown:     true, // to perform refinements
+			AllowUnknown:     true,
 		},
 	},
 	Type: function.StaticReturnType(cty.String),
-	Impl: func(args []cty.Value, retType cty.Type) (cty.Value, error) {
-		// These error checks should not be hit in practice because the language
-		// runtime should check them before calling, so this is just for robustness
-		// and completeness.
-		if len(args) > 1 {
-			return cty.NilVal, function.NewArgErrorf(1, "too many arguments; only one expected")
-		}
-		if len(args) == 0 {
+	Impl: func(args []cty.Value, _ cty.Type) (cty.Value, error) {
+		// Validate arguments.
+		if len(args) != 1 {
 			return cty.NilVal, fmt.Errorf("exactly one argument is required")
 		}
-
 		v := args[0]
+
 		if !v.IsWhollyKnown() {
 			ret := cty.UnknownVal(cty.String).RefineNotNull()
-			// For some types we can refine further due to the HCL grammar,
-			// as long as w eknow the value isn't null.
+
 			if !v.Range().CouldBeNull() {
-				ty := v.Type()
-				switch {
+				switch ty := v.Type(); {
 				case ty.IsObjectType() || ty.IsMapType():
 					ret = ret.Refine().StringPrefixFull("{").NewValue()
 				case ty.IsTupleType() || ty.IsListType() || ty.IsSetType():
@@ -196,9 +156,6 @@ var EncodeExprFunc = function.New(&function.Spec{
 			return ret, nil
 		}
 
-		// This bytes.TrimSpace is to ensure that future changes to HCL, that
-		// might for some reason add extra spaces before the expression (!)
-		// can't invalidate our unknown value prefix refinements above.
 		src := bytes.TrimSpace(hclwrite.TokensForValue(v).Bytes())
 		return cty.StringVal(string(src)), nil
 	},

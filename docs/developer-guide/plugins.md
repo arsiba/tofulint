@@ -4,15 +4,15 @@ If you want to add custom rules, you can write ruleset plugins.
 
 ## Overview
 
-Plugins are independent binaries and use [go-plugin](https://github.com/hashicorp/go-plugin) to communicate with TFLint over gRPC. TFLint executes the binary when the plugin is enabled, and the plugin process must act as an gRPC server for TFLint.
+Plugins are independent binaries and use [go-plugin](https://github.com/hashicorp/go-plugin) to communicate with TofuLint over gRPC. TofuLint executes the binary when the plugin is enabled, and the plugin process must act as an gRPC server for TofuLint.
 
-If you want to create a new plugin, [The template repository](https://github.com/terraform-linters/tflint-ruleset-template) is available to satisfy these specification. You can create your own repository from "Use this template" and easily add rules based on some reference rules.
+If you want to create a new plugin, [the template repository](https://github.com/terraform-linters/tflint-ruleset-template) is available to satisfy these specification. You can create your own repository from "Use this template" and easily add rules based on some reference rules.
 
-The template repository uses the [SDK](https://github.com/arsiba/tofulint-plugin-sdk) that wraps the go-plugin for communication with TFLint. See also the [Architecture](https://github.com/arsiba/tofulint-plugin-sdk#architecture) section for the architecture of the plugin system.
+The template repository uses the [Tflint SDK](https://github.com/terraform-linters/tflint-plugin-sdk) that wraps the go-plugin for communication with TFLint. For the plugin to properly work with Opentofu remeber to change all occurances fo the `terraform-linters/tflint-plugin-sdk` with the [TofuLint SDK](https://github.com/arsiba/tofulint-plugin-sdk) `arsiba/tofulint-plugin-sdk`. See also the [Architecture](https://github.com/arsiba/tofulint-plugin-sdk#architecture) section for the architecture of the plugin system.
 
 ## 1. Creating a repository from the template
 
-Visit [tflint-ruleset-template](https://github.com/terraform-linters/tflint-ruleset-template) and click the "Use this template" button. Repository name must be `tflint-ruleset-*`.
+Visit [tflint-ruleset-template](https://github.com/terraform-linters/tflint-ruleset-template) and click the "Use this template" button. Repository name must be `tofulint-ruleset-*` or `tflint-ruleset-*`. For the plugin to properly work with Opentofu remeber to change all occurances fo the `terraform-linters/tflint-plugin-sdk` with the [TofuLint SDK](https://github.com/arsiba/tofulint-plugin-sdk) `arsiba/tofulint-plugin-sdk`.
 
 ## 2. Building and installing the plugin
 
@@ -36,7 +36,7 @@ TFLint version 0.28.1
 
 ## 3. Changing/Adding the rules
 
-Rename the ruleset and add/edit rules. After making changes, you can check the behavior with `make install`. See also the [tflint-plugin-sdk API reference](https://pkg.go.dev/github.com/arsiba/tofulint-plugin-sdk) for communication with the host process.
+Rename the ruleset and add/edit rules. After making changes, you can check the behavior with `make install`. See also the [tofulint-plugin-sdk API reference](https://pkg.go.dev/github.com/arsiba/tofulint-plugin-sdk) for communication with the host process.
 
 ## 4. Creating a GitHub Release
 
@@ -46,8 +46,8 @@ The requirements to support automatic installation are as follows:
 
 - The built plugin binaries must be published on GitHub Release
 - The release must be tagged with a name like `v1.1.1`
-- The release must contain an asset with a name like `tflint-ruleset-{name}_{GOOS}_{GOARCH}.zip`
-- The zip file must contain a binary named `tflint-ruleset-{name}` (`tflint-ruleset-{name}.exe` in Windows)
+- The release must contain an asset with a name like `tflint-ruleset-{name}_{GOOS}_{GOARCH}.zip` or `tofulint-ruleset-{name}_{GOOS}_{GOARCH}.zip`
+- The zip file must contain a binary named `tflint-ruleset-{name}` (`tflint-ruleset-{name}.exe` in Windows) or `tofulint-ruleset-{name}` (`tofulint-ruleset-{name}.exe` in Windows)
 - The release must contain a checksum file for the zip file with the name `checksums.txt`
 - The checksum file must contain a sha256 hash and filename
 

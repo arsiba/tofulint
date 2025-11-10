@@ -30,7 +30,7 @@ config {
 plugin "aws" {
   enabled = true
   version = "0.4.0"
-  source  = "github.com/terraform-linters/tflint-ruleset-aws"
+  source  = "github.com/arsiba/tofulint-ruleset-aws"
 }
 
 rule "aws_instance_invalid_type" {
@@ -41,7 +41,7 @@ rule "aws_instance_invalid_type" {
 The file path is resolved relative to the module directory when `--chdir` or `--recursive` is used. To use a config file from the working directory when recursing, pass an absolute path:
 
 ```sh
-tflint --recursive --config "$(pwd)/.tflint.hcl"
+tofulint --recursive --config "$(pwd)/.tflint.hcl"
 ```
 
 ### `format`
@@ -82,7 +82,7 @@ config {
 ```
 
 ```console
-$ tflint --call-module-type=all
+$ tofulint --call-module-type=all
 ```
 
 ### `force`
@@ -119,7 +119,7 @@ rule "aws_instance_previous_type" {
 ```
 
 ```console
-$ tflint --only aws_instance_invalid_type --only aws_instance_previous_type
+$ tofulint --only aws_instance_invalid_type --only aws_instance_previous_type
 ```
 
 ### `ignore_module`
@@ -139,7 +139,7 @@ config {
 ```
 
 ```console
-$ tflint --ignore-module terraform-aws-modules/vpc/aws --ignore-module terraform-aws-modules/security-group/aws
+$ tofulint --ignore-module terraform-aws-modules/vpc/aws --ignore-module terraform-aws-modules/security-group/aws
 ```
 
 ### `varfile`
@@ -155,7 +155,7 @@ config {
 ```
 
 ```console
-$ tflint --var-file example1.tfvars --var-file example2.tfvars
+$ tofulint --var-file example1.tfvars --var-file example2.tfvars
 ```
 
 ### `variables`
@@ -171,7 +171,7 @@ config {
 ```
 
 ```console
-$ tflint --var "foo=bar" --var "bar=[\"baz\"]"
+$ tofulint --var "foo=bar" --var "bar=[\"baz\"]"
 ```
 
 ### `rule` blocks
@@ -207,5 +207,5 @@ The priority of rule configs is as follows:
 1. `--only` (CLI flag)
 2. `--enable-rule`, `--disable-rule` (CLI flag)
 3. `rule` blocks (config file)
-4. `preset` (config file, tflint-ruleset-terraform only)
+4. `preset` (config file, tofulint-ruleset-terraform only)
 5. `disabled_by_default` (config file)

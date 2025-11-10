@@ -2,6 +2,6 @@ plugin "testing" {
   enabled = true
 }
 
-plugin "terraform" {
+plugin "opentofu" {
   enabled = false
 }
